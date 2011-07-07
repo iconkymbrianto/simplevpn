@@ -6,6 +6,7 @@ import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.Button;
@@ -35,19 +36,19 @@ public class ShowAllVPNsActivity extends Activity
             public void onClick(View v) {
             	// Display AddVPNActivity 
         		System.out.println("Click!!!!!!!!!!!!!!!!!!!!!!!");
-        		
+
+        		/*
         		// Add dummy entry to DBMS on click
         		ContentValues values = new ContentValues();
         		values.put("name", new Date().getTime());
         		values.put("type", "test");
         		dbA.insert(values);
+        		*/
         		
-        		/*
         		// Change activity
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
         		startActivity(intent);
-        		*/		
             }
         });
 
@@ -55,13 +56,12 @@ public class ShowAllVPNsActivity extends Activity
     	Cursor cursor = dbA.getCursor();
     	startManagingCursor(cursor);
     	
-    	// the desired columns to be bound
+    	// The desired columns of the cursor to be bound
     	String[] from = new String[] { "_id", "type" };
-    	// the XML defined views which the data will be bound to
+    	// The XML defined views which the data will be bound to
     	int[] to = new int[] { R.id.name_entry, R.id.type_entry };
     	
     	SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.vpnview, cursor, from, to);
-
     	
         lv1 = (ListView)findViewById(R.id.listView1);
         lv1.setAdapter(mAdapter);
@@ -71,6 +71,9 @@ public class ShowAllVPNsActivity extends Activity
         lv1.setTextFilterEnabled(true);
         lv1.setOnItemClickListener(new OnItemClickListener() {
           public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+          	// CONNECT TO CLICKED VPN PROFILE!!
+          	// ...
+
             // When clicked, show a toast with the TextView text
             Toast.makeText(getApplicationContext(), ((TextView) view).getText(), Toast.LENGTH_SHORT).show();
           }

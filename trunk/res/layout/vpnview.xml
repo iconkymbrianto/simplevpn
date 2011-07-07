@@ -3,18 +3,23 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_width="match_parent"
   android:layout_height="match_parent">
-  
+    <TableLayout android:layout_height="match_parent" android:id="@+id/tableLayout1" android:layout_width="wrap_content">
+	<TableRow android:id="@+id/tableRow1" android:layout_width="wrap_content" android:layout_height="wrap_content">
 	<TextView
 		android:id="@+id/name_entry"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
     	android:text="Name" 
 		android:textSize="28dip" />
+    </TableRow>
+    <TableRow android:id="@+id/tableRow1" android:layout_width="wrap_content" android:layout_height="wrap_content">
     <TextView
     	android:text="Type" 
 		android:id="@+id/type_entry"
 		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textSize="28dip" />
+		android:layout_height="wrap_content" android:textSize="14dip"/>
+    </TableRow>
+    </TableLayout>
+  
   
 </LinearLayout>
