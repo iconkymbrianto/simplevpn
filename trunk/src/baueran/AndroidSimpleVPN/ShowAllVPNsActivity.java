@@ -1,24 +1,25 @@
 package baueran.AndroidSimpleVPN;
 
+import java.util.Date;
+
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
-import android.content.Intent;
+import android.content.ContentValues;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
+import android.widget.SimpleCursorAdapter;
 import android.view.View;
 
-public class ShowAllVPNsActivity extends Activity { // implements OnClickListener {
+public class ShowAllVPNsActivity extends Activity 
+{ 
     static final String[] vpnTypes = new String[] { };
-    private ListView lv1;
-
+    protected ListView lv1;
+    protected Button addVPNButton;
+    protected DatabaseAdapter dbA;
+    
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -26,25 +27,54 @@ public class ShowAllVPNsActivity extends Activity { // implements OnClickListene
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
 
+    	dbA = new DatabaseAdapter(this);
+    	dbA.open();
+    	
+    	addVPNButton = (Button)findViewById(R.id.addVPN);
+    	addVPNButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	// Display AddVPNActivity 
+        		System.out.println("Click!!!!!!!!!!!!!!!!!!!!!!!");
+        		
+        		// Add dummy entry to DBMS on click
+        		ContentValues values = new ContentValues();
+        		values.put("name", new Date().getTime());
+        		values.put("type", "test");
+        		dbA.insert(values);
+        		
+        		/*
+        		// Change activity
+        		Intent intent = new Intent(Intent.ACTION_VIEW);
+        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
+        		startActivity(intent);
+        		*/		
+            }
+        });
+
+    	// Read data from SQLite DB
+    	Cursor cursor = dbA.getCursor();
+    	startManagingCursor(cursor);
+    	
+    	// the desired columns to be bound
+    	String[] from = new String[] { "_id", "type" };
+    	// the XML defined views which the data will be bound to
+    	int[] to = new int[] { R.id.name_entry, R.id.type_entry };
+    	
+    	SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.vpnview, cursor, from, to);
+
+    	
         lv1 = (ListView)findViewById(R.id.listView1);
+        lv1.setAdapter(mAdapter);
+        
+        /*
         lv1.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, vpnTypes));
         lv1.setTextFilterEnabled(true);
         lv1.setOnItemClickListener(new OnItemClickListener() {
           public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             // When clicked, show a toast with the TextView text
             Toast.makeText(getApplicationContext(), ((TextView) view).getText(), Toast.LENGTH_SHORT).show();
-            
-    		System.out.println("Click!!!!!!!!!!!!!!!!!!!!!!!");
-    		Intent intent = new Intent(Intent.ACTION_VIEW);
-    		intent.setClassName(this, AddVPNActivity.class.getName());
-    		startActivity(intent);
           }
         });
+        */
     }
-
-	
-//	@Override
-//	public void onClick(DialogInterface dialog, int which) {
-//	}
-
 }
