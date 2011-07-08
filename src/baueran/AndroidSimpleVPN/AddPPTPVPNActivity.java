@@ -1,29 +1,22 @@
 package baueran.AndroidSimpleVPN;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class AddPPTPVPNActivity extends Activity implements OnClickListener {
+public class AddPPTPVPNActivity extends Activity {
     static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
 
@@ -33,21 +26,6 @@ public class AddPPTPVPNActivity extends Activity implements OnClickListener {
     {
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.listlayout);
-
-//    	ArrayList<Map> data = new ArrayList<Map>();
-//    	
-//        // Add some objects into the array list
-//        Map m = new HashMap();
-//        m.put("activity",    "VPN name");
-//        m.put("explanation", "VPN name not set");
-//        
-//        data.add(m);
-
-        // setup the data adaptor
-//        String[] from = { "activity", "explanation" };
-//        int[] to = { R.id.name_entry, R.id.type_entry };
-        
-        // SimpleAdapter adapter = new SimpleAdapter(this, (List<? extends Map<String, ?>>) data, R.layout.doublelistviewitem, from, to);
 
         MyCustomAdapter adapter = new MyCustomAdapter();
         adapter.addItem("VPN name", "VPN name not set");
@@ -68,12 +46,6 @@ public class AddPPTPVPNActivity extends Activity implements OnClickListener {
      	});
     }
 	
-	@Override
-	public void onClick(DialogInterface dialog, int which) {
-		// TODO Auto-generated method stub
-		
-	}
-
 	private class MyCustomAdapter extends BaseAdapter 
 	{
 		private final static int TYPE_DOUBLELIST       = 0;
