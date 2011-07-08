@@ -11,6 +11,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.CheckBox;
 import android.widget.AdapterView.OnItemClickListener;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +21,7 @@ public class AddPPTPVPNActivity extends Activity
 {
     static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
+	private boolean encEnabled = false;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -42,7 +44,15 @@ public class AddPPTPVPNActivity extends Activity
     			switch (position)
     			{
     			case 2:
-    				((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
+    				encEnabled = !encEnabled;
+    				if (encEnabled) {
+    					((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
+    					((CheckBox)(view.findViewById(R.id.checkBox1))).setChecked(true);
+    				}
+    				else {
+    					((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is disabled");
+    					((CheckBox)(view.findViewById(R.id.checkBox1))).setChecked(false);
+    				}
     				break;
     			}
     		}
