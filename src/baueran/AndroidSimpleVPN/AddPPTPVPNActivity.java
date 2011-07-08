@@ -6,6 +6,8 @@ import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -16,11 +18,24 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class AddPPTPVPNActivity extends Activity 
+public class AddPPTPVPNActivity extends Activity implements OnItemClickListener
 {
     static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
+	
+    @Override
+	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+		// TODO Auto-generated method stub
+		System.out.println("Clicked main listener!!");
+		
+	}
 
+//	public void onClick(DialogInterface dialog, int which) 
+//    {
+//		// TODO Auto-generated method stub
+//		System.out.println("Clicked main listener!!");
+//	}
+    
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -36,17 +51,18 @@ public class AddPPTPVPNActivity extends Activity
         
     	lv1 = (ListView)findViewById(R.id.listView1);
         lv1.setAdapter(adapter);
-        lv1.setOnItemClickListener(new OnItemClickListener() {
-    		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    			System.out.println("Position: " + position + " View: " + view + " Id: " + id);
-    			switch (position)
-    			{
-    			case 2:
-    				((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
-    				break;
-    			}
-    		}
-     	});
+      lv1.setOnItemClickListener(this);
+//        lv1.setOnItemClickListener(new OnItemClickListener() {
+//    		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//    			System.out.println("Position: " + position + " View: " + view + " Id: " + id);
+//    			switch (position)
+//    			{
+//    			case 2:
+//    				((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
+//    				break;
+//    			}
+//    		}
+//     	});
     }
 	
 	private class MyCustomAdapter extends BaseAdapter 
