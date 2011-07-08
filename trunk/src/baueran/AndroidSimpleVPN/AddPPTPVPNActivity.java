@@ -16,7 +16,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class AddPPTPVPNActivity extends Activity {
+public class AddPPTPVPNActivity extends Activity 
+{
     static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
 
@@ -34,14 +35,16 @@ public class AddPPTPVPNActivity extends Activity {
         adapter.addItem("DNS search domain", "DNS search domain not set (optional)");
         
     	lv1 = (ListView)findViewById(R.id.listView1);
-        lv1 = (ListView)findViewById(R.id.listView1);
         lv1.setAdapter(adapter);
-    	  	
-    	lv1.setTextFilterEnabled(true);
-    	lv1.setOnItemClickListener(new OnItemClickListener() {
+        lv1.setOnItemClickListener(new OnItemClickListener() {
     		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    			// Add new VPN
-    			// ...
+    			System.out.println("Position: " + position + " View: " + view + " Id: " + id);
+    			switch (position)
+    			{
+    			case 2:
+    				((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
+    				break;
+    			}
     		}
      	});
     }
@@ -50,9 +53,9 @@ public class AddPPTPVPNActivity extends Activity {
 	{
 		private final static int TYPE_DOUBLELIST       = 0;
 		private final static int TYPE_DOUBLEBUTTONLIST = 1;
-        private static final int TYPE_MAX_COUNT = TYPE_DOUBLEBUTTONLIST + 1;
+        private final static int TYPE_MAX_COUNT = TYPE_DOUBLEBUTTONLIST + 1;
         private LayoutInflater mInflater;
-        ViewHolder holder;
+        private ViewHolder holder;
 
 		private ArrayList<String[]> data = new ArrayList<String[]>();
 		private int buttonPos = -1;
@@ -123,13 +126,15 @@ public class AddPPTPVPNActivity extends Activity {
 	 
 		public void addItemButton(final String item, final String description) 
 		{
-			data.add(new String[] { item, description } );
+			addItem(item, description);
 
 			// save separator position
 			buttonPos = data.size() - 1;
-            notifyDataSetChanged();
         }
 	}	   
+	
+	// A la 
+	// http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/view/List14.html
 	
 	static class ViewHolder 
 	{
