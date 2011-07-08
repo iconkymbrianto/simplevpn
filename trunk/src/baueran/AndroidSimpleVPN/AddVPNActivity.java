@@ -8,19 +8,15 @@ import java.util.Map;
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 import android.view.View;
 
-public class AddVPNActivity extends Activity implements OnClickListener {
+public class AddVPNActivity extends Activity {
     static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
 
@@ -31,10 +27,10 @@ public class AddVPNActivity extends Activity implements OnClickListener {
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.listlayout);
          
-    	ArrayList<Map> data = new ArrayList<Map>();
+    	ArrayList<Map<String, String>> data = new ArrayList<Map<String, String>>();
     	
         // add some objects into the array list
-        Map m = new HashMap();
+        Map<String, String> m = new HashMap<String,String>();
         m.put("activity", "Add PPTP VPN");
         m.put("explanation", "Point-to-Point Tunneling Protocol");
     	
@@ -62,11 +58,4 @@ public class AddVPNActivity extends Activity implements OnClickListener {
     		}
      	});
     }
-	
-	@Override
-	public void onClick(DialogInterface dialog, int which) {
-		// TODO Auto-generated method stub
-		
-	}
-
 }
