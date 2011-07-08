@@ -1,24 +1,22 @@
 package baueran.AndroidSimpleVPN;
 
-import java.util.Date;
-
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.widget.Button;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.AdapterView.OnItemClickListener;
 import android.view.View;
 
 public class ShowAllVPNsActivity extends Activity 
 { 
     static final String[] vpnTypes = new String[] { };
-    protected ListView lv1;
-    protected Button addVPNButton;
+    protected ListView vpnLV, addLV;
     protected DatabaseAdapter dbA;
     
 	/** Called when the activity is first created. */
@@ -28,13 +26,15 @@ public class ShowAllVPNsActivity extends Activity
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
 
-    	dbA = new DatabaseAdapter(this);
-    	dbA.open();
+    	// There is only one action in the following list, but that's 
+    	// how the actual VPN client GUI works as well...
+    	String[] buttonEntries = new String[] { "Add VPN" };
     	
-    	addVPNButton = (Button)findViewById(R.id.addVPN);
-    	addVPNButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-            	// Display AddVPNActivity 
+        addLV = (ListView)findViewById(R.id.listView0);
+        addLV.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries));
+        addLV.setOnItemClickListener(new OnItemClickListener() {
+        	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        		// Display AddVPNActivity 
         		System.out.println("Click!!!!!!!!!!!!!!!!!!!!!!!");
 
         		/*
@@ -49,10 +49,12 @@ public class ShowAllVPNsActivity extends Activity
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
         		startActivity(intent);
-            }
-        });
-
+            } 
+        }); 
+        
     	// Read data from SQLite DB
+    	dbA = new DatabaseAdapter(this);
+    	dbA.open();
     	Cursor cursor = dbA.getCursor();
     	startManagingCursor(cursor);
     	
@@ -61,10 +63,10 @@ public class ShowAllVPNsActivity extends Activity
     	// The XML defined views which the data will be bound to
     	int[] to = new int[] { R.id.name_entry, R.id.type_entry };
     	
-    	SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.vpnview, cursor, from, to);
+    	SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.doublelistviewitem, cursor, from, to);
     	
-        lv1 = (ListView)findViewById(R.id.listView1);
-        lv1.setAdapter(mAdapter);
+        vpnLV = (ListView)findViewById(R.id.listView1);
+        vpnLV.setAdapter(mAdapter);
         
         /*
         lv1.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, vpnTypes));
