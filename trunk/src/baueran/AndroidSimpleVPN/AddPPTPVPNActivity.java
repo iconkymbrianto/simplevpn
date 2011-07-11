@@ -6,6 +6,7 @@ import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ListActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -17,6 +18,8 @@ import android.widget.TextView;
 import android.widget.CheckBox;
 import android.widget.AdapterView.OnItemClickListener;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -28,7 +31,41 @@ public class AddPPTPVPNActivity extends Activity
 	private static String vpnName = null, vpnServer = null, vpnDomain = null;
 	private static boolean vpnEnc = false;
 
-	/** Called when the activity is first created. */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) 
+    {
+//    	menu.add(group1Id, addFilterBtnId, addFilterBtnId, "Add Filter...");
+//    	menu.add(group1Id, showActionsBtnId, showActionsBtnId, "Show Actions");
+//    	menu.add(group1Id, showFiltersBtnId, showFiltersBtnId, "Show Filters");
+    	   	
+    	return super.onCreateOptionsMenu(menu);
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+/*
+    	switch (item.getItemId()) {
+    	case showActionsBtnId:
+        	filtersVis = false;
+    		updateListView();
+    		unregisterForContextMenu(getListView());
+        	return true;
+    	case showFiltersBtnId:
+        	filtersVis = true;
+    		updateListView();
+        	registerForContextMenu(getListView());
+        	return true;
+    	case addFilterBtnId:
+    		Dialog dialog = new AddFilterDialog(this);
+    		dialog.setOnDismissListener(this);
+    		dialog.show();
+            return true;
+    	}
+ */  	
+    	return false;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
@@ -140,8 +177,8 @@ public class AddPPTPVPNActivity extends Activity
     		}
      	});
     }
-
-	private class MyCustomAdapter extends BaseAdapter 
+    
+    private class MyCustomAdapter extends BaseAdapter 
 	{
 		private final static int TYPE_DOUBLELIST       = 0;
 		private final static int TYPE_DOUBLEBUTTONLIST = 1;
