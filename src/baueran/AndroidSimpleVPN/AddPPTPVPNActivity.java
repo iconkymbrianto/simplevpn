@@ -35,13 +35,75 @@ public class AddPPTPVPNActivity extends Activity
 	// VPN data
 	private String vpnName = null, vpnServer = null, vpnDomain = null;
 	private boolean vpnEnc = false;
+	
+	@Override
+	public void onBackPressed() 
+	{
+		if (vpnName != null && vpnServer != null) {
+			writeVPNData();
+			
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+    		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
+    		startActivity(intent);
+		}
+		else {
+			AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+	        dlgAlert.setTitle("Attention");
+	        dlgAlert.setPositiveButton("Back", null);
+	        dlgAlert.setCancelable(true);
+			
+	        if (vpnName == null)
+	        	dlgAlert.setMessage("Enter VPN name");
+	        else
+	        	dlgAlert.setMessage("Enter VPN server");
+	        
+	        dlgAlert.setPositiveButton("Back", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+	        		Intent intent = new Intent(Intent.ACTION_VIEW);
+	        		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
+	        		startActivity(intent);
+				}
+			});
+	        
+			dlgAlert.create().show();
+		}			
 
+		return;
+	}
+	
     @Override
     public boolean onCreateOptionsMenu(Menu menu) 
     {
     	menu.add(group1Id, saveVPNBtnId, saveVPNBtnId, "Save");
     	menu.add(group1Id, cancelVPNBtnId, cancelVPNBtnId, "Cancel");
     	return super.onCreateOptionsMenu(menu);
+    }
+    
+    public void writeVPNData()
+    {
+    	if (vpnName != null && vpnServer != null) {
+	    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
+			ContentValues values = null;
+			
+			// Add VPN account data to DB
+			values = new ContentValues();
+			values.put("name",    vpnName);
+			values.put("server",  vpnServer);
+			values.put("enc",     vpnEnc? "1" : "0");
+			// TODO: Not sure if this != null check is required
+			if (vpnDomain != null)
+				values.put("domains", vpnDomain);
+			else
+				values.put("domains", "");
+			adapter.insert(values);
+	
+			// Add VPN account name to list of stored and available VPNs
+			// to be presented by ShowAllVPNsActivity
+			values = new ContentValues();
+			values.put("name", vpnName);
+			values.put("type", "PPTP");
+			adapter.insert(values);
+    	}
     }
     
     @Override
@@ -52,24 +114,7 @@ public class AddPPTPVPNActivity extends Activity
 
 		switch (item.getItemId()) {
     	case saveVPNBtnId:
-    		DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
-    		ContentValues values = null;
-    		
-    		// Add VPN account data to DB
-    		values = new ContentValues();
-    		values.put("name",    vpnName);
-    		values.put("server",  vpnServer);
-    		values.put("enc",     vpnEnc? "1" : "0");
-    		values.put("domains", vpnDomain);
-    		adapter.insert(values);
-
-    		// Add VPN account name to list of stored and available VPNs
-    		// to be presented by ShowAllVPNsActivity
-    		values = new ContentValues();
-    		values.put("name", vpnName);
-    		values.put("type", "PPTP");
-    		adapter.insert(values);
-
+    		writeVPNData();
     		startActivity(intent);
     		return true;
     	case cancelVPNBtnId:
@@ -238,6 +283,7 @@ public class AddPPTPVPNActivity extends Activity
 			return position;
 		}
 
+
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) 
 		{
@@ -292,6 +338,6 @@ public class AddPPTPVPNActivity extends Activity
 	static class ViewHolder 
 	{
         TextView text1, text2;
-        CheckBox box1;  // Not sure if we need box1...
+        CheckBox box1;
     }
 }

@@ -33,7 +33,6 @@ public class DatabaseAdapter
 	public Cursor getCursor()
 	{
 		return db.rawQuery("SELECT name AS _id, type FROM vpn", null);
-		// return db.query("vpn", new String[] { "name", "type" }, null, null, null, null, null);
 	}
 	
 	public long insert(ContentValues values)
