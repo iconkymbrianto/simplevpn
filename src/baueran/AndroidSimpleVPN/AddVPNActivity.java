@@ -28,15 +28,13 @@ public class AddVPNActivity extends Activity {
     	setContentView(R.layout.listlayout);
          
     	ArrayList<Map<String, String>> data = new ArrayList<Map<String, String>>();
-    	
-        // add some objects into the array list
-        Map<String, String> m = new HashMap<String,String>();
-        m.put("activity", "Add PPTP VPN");
+
+    	Map<String, String> m = new HashMap<String,String>();
+        m.put("activity",    "Add PPTP VPN");
         m.put("explanation", "Point-to-Point Tunneling Protocol");
     	
         data.add(m);
 
-        // setup the data adaptor
         String[] from = { "activity", "explanation" };
         int[] to = { R.id.name_entry, R.id.type_entry };
         SimpleAdapter adapter = new SimpleAdapter(this, (List<? extends Map<String, ?>>) data, R.layout.doublelistviewitem, from, to);
@@ -48,13 +46,9 @@ public class AddVPNActivity extends Activity {
     	lv1.setTextFilterEnabled(true);
     	lv1.setOnItemClickListener(new OnItemClickListener() {
     		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    			// Change activity
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(AddVPNActivity.this, AddPPTPVPNActivity.class.getName());
         		startActivity(intent);
-        		
-    			// When clicked, show a toast with the TextView text
-//    			Toast.makeText(getApplicationContext(), ((TextView) view).getText(), Toast.LENGTH_SHORT).show();
     		}
      	});
     }

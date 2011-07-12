@@ -15,7 +15,6 @@ import android.view.View;
 
 public class ShowAllVPNsActivity extends Activity 
 { 
-    static final String[] vpnTypes = new String[] { };
     protected ListView vpnLV, addLV;
     protected DatabaseAdapter dbA;
     
@@ -34,18 +33,6 @@ public class ShowAllVPNsActivity extends Activity
         addLV.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries));
         addLV.setOnItemClickListener(new OnItemClickListener() {
         	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        		// Display AddVPNActivity 
-        		System.out.println("Click!!!!!!!!!!!!!!!!!!!!!!!");
-
-        		/*
-        		// Add dummy entry to DBMS on click
-        		ContentValues values = new ContentValues();
-        		values.put("name", new Date().getTime());
-        		values.put("type", "test");
-        		dbA.insert(values);
-        		*/
-        		
-        		// Change activity
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
         		startActivity(intent);
@@ -67,19 +54,5 @@ public class ShowAllVPNsActivity extends Activity
     	
         vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(mAdapter);
-        
-        /*
-        lv1.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, vpnTypes));
-        lv1.setTextFilterEnabled(true);
-        lv1.setOnItemClickListener(new OnItemClickListener() {
-          public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-          	// CONNECT TO CLICKED VPN PROFILE!!
-          	// ...
-
-            // When clicked, show a toast with the TextView text
-            Toast.makeText(getApplicationContext(), ((TextView) view).getText(), Toast.LENGTH_SHORT).show();
-          }
-        });
-        */
     }
 }
