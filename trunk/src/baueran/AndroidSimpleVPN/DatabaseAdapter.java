@@ -7,9 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 
 public class DatabaseAdapter 
 {
-	private Context ctx;
-	private DatabaseHelper dbHelper;
-	private SQLiteDatabase db;
+	private static Context ctx;
+	private static DatabaseHelper dbHelper = null;
+	private static SQLiteDatabase db = null;
 	
 	public DatabaseAdapter(Context c)
 	{
@@ -18,13 +18,16 @@ public class DatabaseAdapter
 	
 	public void open()
 	{
-		dbHelper = new DatabaseHelper(ctx);
-		db = dbHelper.getWritableDatabase();
+		if (dbHelper == null || db == null) {
+			dbHelper = new DatabaseHelper(ctx);
+			db = dbHelper.getWritableDatabase();
+		}
 	}
 
 	public void close()
 	{
-		dbHelper.close();
+		if (dbHelper != null)
+			dbHelper.close();
 	}
 	
 	public Cursor getCursor()

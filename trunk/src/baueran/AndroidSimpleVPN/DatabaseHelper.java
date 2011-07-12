@@ -6,7 +6,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper
 {
-
 	private static final String DATABASE_NAME    = 
 		"vpndata";
 	private static final String DATABASE_CREATE1 = 
@@ -31,5 +30,4 @@ public class DatabaseHelper extends SQLiteOpenHelper
 	{
 		// TODO Auto-generated method stub
 	}
-
 }

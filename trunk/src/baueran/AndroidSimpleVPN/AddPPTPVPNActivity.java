@@ -6,9 +6,10 @@ import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ListActivity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -25,44 +26,57 @@ import android.view.ViewGroup;
 
 public class AddPPTPVPNActivity extends Activity
 {
-    static final String[] vpnTypes = new String[] {  };
     private ListView lv1;
+    
+	private final int saveVPNBtnId   = Menu.FIRST;
+	private final int cancelVPNBtnId = Menu.FIRST + 1;
+	private final int group1Id = 2;
 	
-	private static String vpnName = null, vpnServer = null, vpnDomain = null;
-	private static boolean vpnEnc = false;
+	// VPN data
+	private String vpnName = null, vpnServer = null, vpnDomain = null;
+	private boolean vpnEnc = false;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) 
     {
-//    	menu.add(group1Id, addFilterBtnId, addFilterBtnId, "Add Filter...");
-//    	menu.add(group1Id, showActionsBtnId, showActionsBtnId, "Show Actions");
-//    	menu.add(group1Id, showFiltersBtnId, showFiltersBtnId, "Show Filters");
-    	   	
+    	menu.add(group1Id, saveVPNBtnId, saveVPNBtnId, "Save");
+    	menu.add(group1Id, cancelVPNBtnId, cancelVPNBtnId, "Cancel");
     	return super.onCreateOptionsMenu(menu);
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
-/*
-    	switch (item.getItemId()) {
-    	case showActionsBtnId:
-        	filtersVis = false;
-    		updateListView();
-    		unregisterForContextMenu(getListView());
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.setClassName(this, ShowAllVPNsActivity.class.getName());
+
+		switch (item.getItemId()) {
+    	case saveVPNBtnId:
+    		DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
+    		ContentValues values = null;
+    		
+    		// Add VPN account data to DB
+    		values = new ContentValues();
+    		values.put("name",    vpnName);
+    		values.put("server",  vpnServer);
+    		values.put("enc",     vpnEnc? "1" : "0");
+    		values.put("domains", vpnDomain);
+    		adapter.insert(values);
+
+    		// Add VPN account name to list of stored and available VPNs
+    		// to be presented by ShowAllVPNsActivity
+    		values = new ContentValues();
+    		values.put("name", vpnName);
+    		values.put("type", "PPTP");
+    		adapter.insert(values);
+
+    		startActivity(intent);
+    		return true;
+    	case cancelVPNBtnId:
+    		startActivity(intent);
         	return true;
-    	case showFiltersBtnId:
-        	filtersVis = true;
-    		updateListView();
-        	registerForContextMenu(getListView());
-        	return true;
-    	case addFilterBtnId:
-    		Dialog dialog = new AddFilterDialog(this);
-    		dialog.setOnDismissListener(this);
-    		dialog.show();
-            return true;
     	}
- */  	
+
     	return false;
     }
 
