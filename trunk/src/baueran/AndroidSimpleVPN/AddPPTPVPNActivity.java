@@ -45,6 +45,7 @@ public class AddPPTPVPNActivity extends Activity
 			Intent intent = new Intent(Intent.ACTION_VIEW);
     		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
     		startActivity(intent);
+    		finish();
 		}
 		else {
 			AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
@@ -62,6 +63,7 @@ public class AddPPTPVPNActivity extends Activity
 	        		Intent intent = new Intent(Intent.ACTION_VIEW);
 	        		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
 	        		startActivity(intent);
+	        		finish();
 				}
 			});
 	        
@@ -90,19 +92,15 @@ public class AddPPTPVPNActivity extends Activity
 			values.put("name",    vpnName);
 			values.put("server",  vpnServer);
 			values.put("enc",     vpnEnc? "1" : "0");
-			// TODO: Not sure if this != null check is required
-			if (vpnDomain != null)
-				values.put("domains", vpnDomain);
-			else
-				values.put("domains", "");
-			adapter.insert(values);
+			values.put("domains", vpnDomain != null? vpnDomain : ""); // TODO: Not sure if != null check is required
+			adapter.insert("pptp", values);
 	
 			// Add VPN account name to list of stored and available VPNs
 			// to be presented by ShowAllVPNsActivity
 			values = new ContentValues();
 			values.put("name", vpnName);
 			values.put("type", "PPTP");
-			adapter.insert(values);
+			adapter.insert("vpn", values);
     	}
     }
     
@@ -116,9 +114,11 @@ public class AddPPTPVPNActivity extends Activity
     	case saveVPNBtnId:
     		writeVPNData();
     		startActivity(intent);
+    		finish();
     		return true;
     	case cancelVPNBtnId:
     		startActivity(intent);
+    		finish();
         	return true;
     	}
 

@@ -49,6 +49,7 @@ public class AddVPNActivity extends Activity {
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(AddVPNActivity.this, AddPPTPVPNActivity.class.getName());
         		startActivity(intent);
+        		finish();
     		}
      	});
     }
