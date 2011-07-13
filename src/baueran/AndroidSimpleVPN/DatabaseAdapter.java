@@ -35,11 +35,22 @@ public class DatabaseAdapter
 		return db.rawQuery("SELECT name AS _id, type FROM vpn", null);
 	}
 	
-	public long insert(ContentValues values)
+	public long insert(String table, ContentValues values)
 	{
-		if (db != null)
-			return db.insert("vpn", null, values);
-		else
+		try {
+			return db.insert(table, null, values);
+		}
+		catch (Exception e) {
+			System.out.println("Exception thrown when inserting data: " + e.getMessage());
 			return -1;
+		}
+	}
+	
+	public void deleteVPN(String name)
+	{
+		if (db != null) {
+			db.delete("vpn",  "name=?", new String[] { name });
+			db.delete("pptp", "name=?", new String[] { name });			
+		}
 	}
 }

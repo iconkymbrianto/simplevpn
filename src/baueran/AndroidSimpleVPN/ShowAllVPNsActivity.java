@@ -16,15 +16,23 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ContextMenu.ContextMenuInfo;
 
 public class ShowAllVPNsActivity extends Activity 
 { 
-    protected ListView vpnLV, addLV;
-    protected DatabaseAdapter dbA;
+    private ListView vpnLV, addLV;
+    private DatabaseAdapter dbA;
     
+	private final int CONTEXT_CONNECT = 0;
+	private final int CONTEXT_DISCONNECT = 1;
+	private final int CONTEXT_EDIT = 2;
+	private final int CONTEXT_DELETE = 3;
+
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -56,8 +64,44 @@ public class ShowAllVPNsActivity extends Activity
     	
         vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(adapter);
+    	registerForContextMenu(vpnLV);
     }
 
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
+    {
+    	final AdapterView.AdapterContextMenuInfo info =	(AdapterView.AdapterContextMenuInfo)menuInfo;
+    	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
+		menu.setHeaderTitle(selectedVPN);
+
+		menu.add(0, CONTEXT_CONNECT, CONTEXT_CONNECT, "Connect to network");
+    	menu.add(0, CONTEXT_DISCONNECT, CONTEXT_DISCONNECT, "Disconnect from network");
+    	menu.add(0, CONTEXT_EDIT, CONTEXT_EDIT, "Edit network");
+    	menu.add(0, CONTEXT_DELETE, CONTEXT_DELETE, "Delete network");
+
+    	// TODO: Dynamically determine whether or not the connection is enabled
+    	menu.getItem(1).setEnabled(false);
+    }
+
+    @Override 
+    public boolean onContextItemSelected(MenuItem item) 
+    {
+		final ContextMenuInfo menuInfo = item.getMenuInfo();
+    	final AdapterView.AdapterContextMenuInfo info =	(AdapterView.AdapterContextMenuInfo)menuInfo;
+    	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
+
+		switch (item.getItemId()) {
+    	case CONTEXT_DELETE: {
+    		dbA.deleteVPN(selectedVPN);
+    		((MyCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
+    		((MyCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
+    		return true; 
+    		}
+		}
+    	
+    	return false;
+    }
+    
     // The custom adapter is necessary because a SimpleCursorAdapter
     // is more or less a 1:1 mapping from DB to view, and I need to
     // change/update the connection status of the respective connection
@@ -100,7 +144,13 @@ public class ShowAllVPNsActivity extends Activity
 
 			return convertView;
 		}
-
+		
+		@Override
+		public Object getItem(int arg0) 
+		{
+			return data.get(arg0);
+		}
+		
 		@Override
 		public View newView(Context context, Cursor cursor, ViewGroup parent) 
 		{			
@@ -122,6 +172,16 @@ public class ShowAllVPNsActivity extends Activity
 		{
 			return data.size();
 		}
+		
+		public void deleteVPN(String name)
+		{
+			for (String[] item : data) {
+				if (item[0].equals(name)) {
+					data.remove(item);
+					return;  // There should only ever be one profile for a given name, so one delete should always suffice
+				}
+			}
+		}
 	}
 
 	// This pattern follows
@@ -133,4 +193,3 @@ public class ShowAllVPNsActivity extends Activity
 	    CheckBox box1;
 	}
 }
-
