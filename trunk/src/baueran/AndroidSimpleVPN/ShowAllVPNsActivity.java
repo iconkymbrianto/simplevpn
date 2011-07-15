@@ -90,6 +90,10 @@ public class ShowAllVPNsActivity extends Activity
     	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
 
 		switch (item.getItemId()) {
+		case CONTEXT_CONNECT: {
+			// TODO: Connect to VPN
+			// ...
+			}
     	case CONTEXT_DELETE: {
     		dbA.deleteVPN(selectedVPN);
     		((MyCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
@@ -107,11 +111,13 @@ public class ShowAllVPNsActivity extends Activity
     		intent.putExtras(bundle); // Send VPN network name to be edited to activity
     		startActivity(intent);
     		finish();
+    		return true;
     		}
 		}
     	
     	return false;
     }
+    
     
     // The custom adapter is necessary because a SimpleCursorAdapter
     // is more or less a 1:1 mapping from DB to view, and I need to
