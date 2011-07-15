@@ -33,7 +33,6 @@ public class ShowAllVPNsActivity extends Activity
 	private final int CONTEXT_EDIT = 2;
 	private final int CONTEXT_DELETE = 3;
 
-	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
@@ -57,7 +56,7 @@ public class ShowAllVPNsActivity extends Activity
     	// Read data from SQLite DB
     	dbA = new DatabaseAdapter(this);
     	dbA.open();
-    	Cursor cursor = dbA.getCursor();
+    	Cursor cursor = dbA.getVPNCursor();
     	startManagingCursor(cursor);
     	
     	MyCustomAdapter adapter = new MyCustomAdapter(this, cursor);
@@ -96,6 +95,18 @@ public class ShowAllVPNsActivity extends Activity
     		((MyCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
     		((MyCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
     		return true; 
+    		}
+    	case CONTEXT_EDIT: {
+    		Bundle bundle = new Bundle();
+    		bundle.putString("name", selectedVPN);
+    		
+    		// TODO: This calls PPTP profiles by default.  Look up which profile is
+    		// associated to the name, then call the right activity for edit.
+    		Intent intent = new Intent(Intent.ACTION_VIEW);
+    		intent.setClassName(ShowAllVPNsActivity.this, AddPPTPVPNActivity.class.getName());
+    		intent.putExtras(bundle); // Send VPN network name to be edited to activity
+    		startActivity(intent);
+    		finish();
     		}
 		}
     	

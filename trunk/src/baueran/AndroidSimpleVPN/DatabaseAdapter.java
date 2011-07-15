@@ -30,11 +30,16 @@ public class DatabaseAdapter
 			dbHelper.close();
 	}
 	
-	public Cursor getCursor()
+	public Cursor getVPNCursor()
 	{
 		return db.rawQuery("SELECT name AS _id, type FROM vpn", null);
 	}
-	
+
+	public Cursor getPPTPCursor()
+	{
+		return db.rawQuery("SELECT name AS _id, server, enc, domains FROM pptp", null);
+	}
+
 	public long insert(String table, ContentValues values)
 	{
 		try {

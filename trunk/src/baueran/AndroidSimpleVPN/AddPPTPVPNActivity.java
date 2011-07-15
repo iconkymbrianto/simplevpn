@@ -10,6 +10,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -35,11 +36,13 @@ public class AddPPTPVPNActivity extends Activity
 	// VPN data
 	private String vpnName = null, vpnServer = null, vpnDomain = null;
 	private boolean vpnEnc = false;
+	private String oldVPNName = null;
 	
 	@Override
 	public void onBackPressed() 
 	{
 		if (vpnName != null && vpnServer != null) {
+			deleteOldVPNData();
 			writeVPNData();
 			
 			Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -103,6 +106,37 @@ public class AddPPTPVPNActivity extends Activity
 			adapter.insert("vpn", values);
     	}
     }
+
+    public ContentValues readVPNData(String vpnNetworkName)
+    {
+		ContentValues networkInfo = null;
+    	DatabaseAdapter adapter   = new DatabaseAdapter(getApplicationContext());
+    	Cursor result             = adapter.getPPTPCursor();
+    	
+    	for (result.moveToFirst(); !result.isAfterLast(); result.moveToNext()) {
+    		if (result.getString(0).equals(vpnNetworkName)) {
+    			networkInfo = new ContentValues();
+    			networkInfo.put("name", vpnNetworkName);
+	    		networkInfo.put("server", result.getString(1));
+	    		networkInfo.put("enc", result.getInt(2));
+	    		networkInfo.put("domains", result.getString(3));
+	    		break;
+    		}
+    	}
+
+    	return networkInfo;
+    }
+    
+    // This function deletes old data, in case the user came to this
+    // activity to edit an existing VPN network profile.
+    
+    public void deleteOldVPNData()
+    {
+    	if (oldVPNName != null) {
+    		DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
+    		adapter.deleteVPN(oldVPNName);
+    	}
+    }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
@@ -112,6 +146,7 @@ public class AddPPTPVPNActivity extends Activity
 
 		switch (item.getItemId()) {
     	case saveVPNBtnId:
+    		deleteOldVPNData();
     		writeVPNData();
     		startActivity(intent);
     		finish();
@@ -136,7 +171,20 @@ public class AddPPTPVPNActivity extends Activity
 
         MyCustomAdapter adapter = new MyCustomAdapter();
 
-		adapter.addItem("VPN name", 
+        Bundle bundle = this.getIntent().getExtras();
+        // Check if we have been called with a parameter to edit
+        // an existing VPN network entry, or want to create a new one.
+        // Parameter is called "name" and set inside ShowAllVPNsActivity.
+        if (bundle != null) {
+        	ContentValues networkInfo = readVPNData(bundle.getString("name"));
+        	vpnName = networkInfo.getAsString("name");
+        	vpnServer = networkInfo.getAsString("server");
+        	vpnEnc = networkInfo.getAsInteger("enc").intValue() == 1? true : false;
+        	vpnDomain = networkInfo.getAsString("domains");
+        	oldVPNName = vpnName;
+        }
+
+        adapter.addItem("VPN name", 
 				vpnName == null? "VPN name not set" : vpnName);
         adapter.addItem("Set VPN server", 
         		vpnServer == null? "VPN server is not set" : vpnServer);
