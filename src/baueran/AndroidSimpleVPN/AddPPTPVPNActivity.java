@@ -34,14 +34,13 @@ public class AddPPTPVPNActivity extends Activity
 	private final int group1Id = 2;
 	
 	// VPN data
-	private String vpnName = null, vpnServer = null, vpnDomain = null;
-	private boolean vpnEnc = false;
+	private PPTPNetwork pptpProfile = new PPTPNetwork();
 	private String oldVPNName = null;
 	
 	@Override
 	public void onBackPressed() 
 	{
-		if (vpnName != null && vpnServer != null) {
+		if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
 			deleteOldVPNData();
 			writeVPNData();
 			
@@ -56,7 +55,7 @@ public class AddPPTPVPNActivity extends Activity
 	        dlgAlert.setPositiveButton("Back", null);
 	        dlgAlert.setCancelable(true);
 			
-	        if (vpnName == null)
+	        if (pptpProfile.getName() == null)
 	        	dlgAlert.setMessage("Enter VPN name");
 	        else
 	        	dlgAlert.setMessage("Enter VPN server");
@@ -86,40 +85,40 @@ public class AddPPTPVPNActivity extends Activity
     
     public void writeVPNData()
     {
-    	if (vpnName != null && vpnServer != null) {
+    	if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
 	    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
 			ContentValues values = null;
 			
 			// Add VPN account data to DB
 			values = new ContentValues();
-			values.put("name",    vpnName);
-			values.put("server",  vpnServer);
-			values.put("enc",     vpnEnc? "1" : "0");
-			values.put("domains", vpnDomain != null? vpnDomain : ""); // TODO: Not sure if != null check is required
+			values.put("name",    pptpProfile.getName());
+			values.put("server",  pptpProfile.getServer());
+			values.put("enc",     pptpProfile.isEncEnabled()? "1" : "0");
+			values.put("domains", pptpProfile.getDomains() != null? pptpProfile.getDomains() : ""); // TODO: Not sure if != null check is required
 			adapter.insert("pptp", values);
 	
 			// Add VPN account name to list of stored and available VPNs
 			// to be presented by ShowAllVPNsActivity
 			values = new ContentValues();
-			values.put("name", vpnName);
+			values.put("name", pptpProfile.getName());
 			values.put("type", "PPTP");
 			adapter.insert("vpn", values);
     	}
     }
 
-    public ContentValues readVPNData(String vpnNetworkName)
+    public PPTPNetwork readVPNData(String vpnNetworkName)
     {
-		ContentValues networkInfo = null;
-    	DatabaseAdapter adapter   = new DatabaseAdapter(getApplicationContext());
-    	Cursor result             = adapter.getPPTPCursor();
+		PPTPNetwork networkInfo = null;
+    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
+    	Cursor result           = adapter.getPPTPCursor();
     	
     	for (result.moveToFirst(); !result.isAfterLast(); result.moveToNext()) {
     		if (result.getString(0).equals(vpnNetworkName)) {
-    			networkInfo = new ContentValues();
-    			networkInfo.put("name", vpnNetworkName);
-	    		networkInfo.put("server", result.getString(1));
-	    		networkInfo.put("enc", result.getInt(2));
-	    		networkInfo.put("domains", result.getString(3));
+    			networkInfo = new PPTPNetwork();
+    			networkInfo.setName(vpnNetworkName);
+    			networkInfo.setServer(result.getString(1));
+    			networkInfo.setEncEnabled(result.getInt(2) == 1? true : false);
+    			networkInfo.setDomains(result.getString(3));
 	    		break;
     		}
     	}
@@ -176,22 +175,18 @@ public class AddPPTPVPNActivity extends Activity
         // an existing VPN network entry, or want to create a new one.
         // Parameter is called "name" and set inside ShowAllVPNsActivity.
         if (bundle != null) {
-        	ContentValues networkInfo = readVPNData(bundle.getString("name"));
-        	vpnName = networkInfo.getAsString("name");
-        	vpnServer = networkInfo.getAsString("server");
-        	vpnEnc = networkInfo.getAsInteger("enc").intValue() == 1? true : false;
-        	vpnDomain = networkInfo.getAsString("domains");
-        	oldVPNName = vpnName;
+        	pptpProfile = readVPNData(bundle.getString("name"));
+        	oldVPNName = pptpProfile.getName();
         }
 
         adapter.addItem("VPN name", 
-				vpnName == null? "VPN name not set" : vpnName);
+				pptpProfile.getName() == null? "VPN name not set" : pptpProfile.getName());
         adapter.addItem("Set VPN server", 
-        		vpnServer == null? "VPN server is not set" : vpnServer);
+        		pptpProfile.getServer() == null? "VPN server is not set" : pptpProfile.getServer());
         adapter.addItemButton("Enable encryption", 
-        		"PPTP encryption is " + (vpnEnc? "enabled" : "disabled"));
+        		"PPTP encryption is " + (pptpProfile.isEncEnabled()? "enabled" : "disabled"));
         adapter.addItem("DNS search domain", 
-	        		vpnDomain == null? "DNS search domain not set (optional)" : vpnDomain);
+	        	pptpProfile.getDomains() == null? "DNS search domain not set (optional)" : pptpProfile.getDomains());
         
         lv1.setAdapter(adapter);
     	lv1.setOnItemClickListener(new OnItemClickListener() {
@@ -207,8 +202,8 @@ public class AddPPTPVPNActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter()); 
-    						vpnName = input.getText().toString().trim();
-    						((String[])(adapter.getItem(0)))[1] = vpnName;
+    						pptpProfile.setName(input.getText().toString().trim());
+    						((String[])(adapter.getItem(0)))[1] = pptpProfile.getName();
     						adapter.notifyDataSetChanged();
     					}
     				});
@@ -231,8 +226,8 @@ public class AddPPTPVPNActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter()); 
-    						vpnServer = input.getText().toString().trim();
-    						((String[])(adapter.getItem(1)))[1] = vpnServer;
+    						pptpProfile.setServer(input.getText().toString().trim());
+    						((String[])(adapter.getItem(1)))[1] = pptpProfile.getServer();
     						adapter.notifyDataSetChanged();
     					}
     				});
@@ -247,8 +242,8 @@ public class AddPPTPVPNActivity extends Activity
     		        break;
     			}
     			case 2:
-					vpnEnc = !vpnEnc;
-    				if (vpnEnc) {
+					pptpProfile.setEncEnabled(!pptpProfile.isEncEnabled());
+    				if (pptpProfile.isEncEnabled()) {
     					((TextView)view.findViewById(R.id.textView2)).setText("PPTP encryption is enabled");
     					((CheckBox)(view.findViewById(R.id.checkBox1))).setChecked(true);
     				}
@@ -266,8 +261,8 @@ public class AddPPTPVPNActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter()); 
-    						vpnDomain = input.getText().toString().trim();
-    						((String[])(adapter.getItem(3)))[1] = vpnDomain;
+    						pptpProfile.setDomains(input.getText().toString().trim());
+    						((String[])(adapter.getItem(3)))[1] = pptpProfile.getDomains();
     						adapter.notifyDataSetChanged();
     					}
     				});
@@ -343,7 +338,7 @@ public class AddPPTPVPNActivity extends Activity
 		        holder.text2 = (TextView)convertView.findViewById(R.id.textView2);
 		        holder.box1 = (CheckBox)convertView.findViewById(R.id.checkBox1);
 		        
-		        if (vpnEnc)
+		        if (pptpProfile.isEncEnabled())
 		        	holder.box1.setChecked(true);
 			}
 			else {
