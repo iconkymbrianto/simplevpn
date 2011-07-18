@@ -37,7 +37,7 @@ public class DatabaseAdapter
 
 	public Cursor getPPTPCursor()
 	{
-		return db.rawQuery("SELECT name AS _id, server, enc, domains FROM pptp", null);
+		return db.rawQuery("SELECT name AS _id, server, enc, domains, username, password FROM pptp", null);
 	}
 
 	public long insert(String table, ContentValues values)

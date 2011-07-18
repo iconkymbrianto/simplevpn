@@ -25,6 +25,7 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -37,6 +38,7 @@ public class ShowAllVPNsActivity extends Activity
     private ListView vpnLV, addLV;
     private DatabaseAdapter dbA;
     private Cursor cursor = null;
+    private VPNNetwork selectedVPNProfile = null;
     
 	private final int CONTEXT_CONNECT = 0;
 	private final int CONTEXT_DISCONNECT = 1;
@@ -134,12 +136,11 @@ public class ShowAllVPNsActivity extends Activity
 		return profile;
     }
     
-	private ServiceConnection mConnection = new ServiceConnection() {
+	private ServiceConnection mConnection = new ServiceConnection() 
+	{
 		@Override
-		public void onServiceConnected(ComponentName name, IBinder service) {
-			// TODO Auto-generated method stub
-			System.out.println("Service connected!!!!!!!!!!!!!!!!");
-
+		public void onServiceConnected(ComponentName name, IBinder service) 
+		{
 			ApplicationInfo vpnAppInfo;
 	    	Context ctx = getApplicationContext();
 	    	PathClassLoader stubClassLoader;
@@ -150,14 +151,11 @@ public class ShowAllVPNsActivity extends Activity
 				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
 				Method m = stubClass.getMethod("asInterface", IBinder.class);
 				Object theService = m.invoke(null, service);
-				System.out.println("Service Object: " + theService);
-				
 				
 				Class<?> vpnProfile = null;
 				try {
 					vpnProfile = Class.forName("android.net.vpn.PptpProfile");
 				} catch (ClassNotFoundException e2) {
-					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
 								
@@ -166,49 +164,45 @@ public class ShowAllVPNsActivity extends Activity
 		    	try {
 		    		vpnInstance = vpnProfile.newInstance();
 		    		Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
-		    		System.out.println("Setting server name via " + mm + ": " + mm.invoke(vpnInstance, "vpn.nicta.com.au"));
+		    		mm.invoke(vpnInstance, selectedVPNProfile.getServer());
 				} catch (InstantiationException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				} catch (IllegalAccessException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-		    	
 				
-		        Method mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
-		        System.out.println("Invoke " + mm + ":" + mm.invoke(theService, new Object[]{ vpnInstance, "USERNAME", "PASSWORD" }));
-
-			} catch (NameNotFoundException e) {
-				// TODO Auto-generated catch block
+				Method mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
+		        mm.invoke(theService, new Object[]{ vpnInstance, selectedVPNProfile.getEncUsername(), selectedVPNProfile.getEncPassword() });
+			} 
+			catch (NameNotFoundException e) {
 				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (ClassNotFoundException e) {
 				e.printStackTrace();
-			} catch (SecurityException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (SecurityException e) {
 				e.printStackTrace();
-			} catch (NoSuchMethodException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (NoSuchMethodException e) {
 				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (IllegalArgumentException e) {
 				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (IllegalAccessException e) {
 				e.printStackTrace();
-			} catch (InvocationTargetException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (InvocationTargetException e) {
 				e.printStackTrace();
 			}
 
-            // mService = IAndiService.Stub.asInterface(service);
+			Toast.makeText(getApplicationContext(), "VPN should be ready now", Toast.LENGTH_LONG).show();
 		}
 
 		@Override
-		public void onServiceDisconnected(ComponentName name) {
-			// TODO Auto-generated method stub
-			
+		public void onServiceDisconnected(ComponentName name) 
+		{
+			Toast.makeText(getApplicationContext(), "VPN disconnected", Toast.LENGTH_LONG).show();
 		}
 	};
 
@@ -216,83 +210,19 @@ public class ShowAllVPNsActivity extends Activity
     {
     	boolean connected = false;
     	
-    	Context ctx = getApplicationContext();
-    	ApplicationInfo vpnAppInfo;
-    	PathClassLoader stubClassLoader;
-
-    	Class<?> vpnProfile = null;
-		try {
-			vpnProfile = Class.forName("android.net.vpn.PptpProfile");
-		} catch (ClassNotFoundException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
+    	try {
+    		selectedVPNProfile = profile;
+    		connected = bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE);
+    	} 
+    	catch (SecurityException e) {
+			e.printStackTrace();
+		} 
+		catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} 
 		
-		//    	Object vpnInstance = null;
-    	
-    	try {
-    		vpnProfile.newInstance();
-    		// vpnInstance = vpnProfile.newInstance();
-		} catch (InstantiationException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IllegalAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-    	
-    	try {
-			vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
-	        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
-	        
-	        // Load class
-	        Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
+		Toast.makeText(getApplicationContext(), connected? "Service bound" : "Service not bound", Toast.LENGTH_LONG).show();
 
-			System.out.println(bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE));
-
-	        
-	        // Class<?> vpnManager = Class.forName("android.net.vpn.VpnManager", true, stubClassLoader);
-
-	        System.out.println("Classes loaded?");
-	        System.out.println("Class stubClass : " + stubClass);
-	        System.out.println("Class vpnProfile: " + vpnProfile);
-//	        System.out.println("Class vpnManager: " + vpnManager);
-//	        System.out.println("Class vpnManager: " + vpnManager.getConstructor(Context.class).newInstance(ctx));
-
-	        // Method m = stubClass.getMethod("asInterface", IBinder.class);
-	        // Object nativeService = m.invoke(null, );
-	        Method m = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
-	        System.out.println("Method: " + m);
-	        
-//	        Method n = vpnManager.getMethod("getSupportedVpnTypes");
-//	        Object o = n.invoke(vpnManager.getConstructor(Context.class).newInstance(ctx));
-	        // TODO: Create instance of stubClass service, but not sure how... service is not running?!
-
-	        // Method enable = c.getMethod("enable");
-	        // m.setAccessible(true);
-	        // System.out.println(m.invoke(, new Object[] { null, "a", "b" }));
-	        
-	        // Object o = m.invoke(stubClass.newInstance(), new Object[]{ vpnInstance, "username", "password" });
-//	        System.out.println("Invoked: " + o);	        
-    	} catch (NameNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-    	catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-
-    	
     	return connected;
     }
     
@@ -339,7 +269,6 @@ public class ShowAllVPNsActivity extends Activity
     	
     	return false;
     }
-    
     
     // The custom adapter is necessary because a SimpleCursorAdapter
     // is more or less a 1:1 mapping from DB to view, and I need to
@@ -402,7 +331,7 @@ public class ShowAllVPNsActivity extends Activity
 
 			mInflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-			for (cursor.moveToFirst(); cursor.moveToNext(); cursor.isAfterLast())
+			for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext() )
 				data.add(new String[] { cursor.getString(0), cursor.getString(1) } );
 		}
 

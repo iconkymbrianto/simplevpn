@@ -6,6 +6,8 @@ public class VPNNetwork
 	private String type = null;
 	private String server = null;
 	private String domains = null;
+	private String encUsername = null;
+	private String encPassword = null;
 	
 	public void setName(String name) 
 	{
@@ -45,5 +47,25 @@ public class VPNNetwork
 	public String getDomains() 
 	{
 		return domains;
+	}
+
+	public void setEncUsername(String encUsername) 
+	{
+		this.encUsername = encUsername;
+	}
+
+	public String getEncUsername()
+	{
+		return encUsername;
+	}
+
+	public void setEncPassword(String encPassword)
+	{
+		this.encPassword = encPassword;
+	}
+
+	public String getEncPassword() 
+	{
+		return encPassword;
 	}
 }
