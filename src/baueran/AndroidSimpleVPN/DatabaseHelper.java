@@ -11,7 +11,7 @@ public class DatabaseHelper extends SQLiteOpenHelper
 	private static final String DATABASE_CREATE1 = 
 		"CREATE TABLE vpn (name TEXT PRIMARY KEY, type TEXT NOT NULL);";
 	private static final String DATABASE_CREATE2 = 
-		"CREATE TABLE pptp (name TEXT PRIMARY KEY, server TEXT NOT NULL, enc INTEGER NOT NULL, domains TEXT);";
+		"CREATE TABLE pptp (name TEXT PRIMARY KEY, server TEXT NOT NULL, enc INTEGER NOT NULL, domains TEXT, username TEXT NOT NULL, password TEXT NOT NULL);";
 		
 	public DatabaseHelper(Context context) 
 	{
