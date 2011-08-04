@@ -40,6 +40,11 @@ public class DatabaseAdapter
 		return db.rawQuery("SELECT name AS _id, server, enc, domains, username, password FROM pptp", null);
 	}
 
+	public Cursor getPrefsCursor()
+	{
+		return db.rawQuery("SELECT _id, value, rowid FROM prefs", null);
+	}
+
 	public long insert(String table, ContentValues values)
 	{
 		try {
@@ -50,7 +55,18 @@ public class DatabaseAdapter
 			return -1;
 		}
 	}
-	
+
+	public long update(int rowId, String table, ContentValues values)
+	{
+		try {
+			return db.update(table, values, "_id=" + rowId, null);
+		}
+		catch (Exception e) {
+			System.out.println("Exception thrown when inserting data: " + e.getMessage());
+			return -1;
+		}
+	}
+
 	public void deleteVPN(String name)
 	{
 		if (db != null) {
