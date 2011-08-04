@@ -2,6 +2,9 @@ package baueran.AndroidSimpleVPN;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 import dalvik.system.PathClassLoader;
@@ -9,8 +12,11 @@ import dalvik.system.PathClassLoader;
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
@@ -22,6 +28,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CursorAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -44,40 +51,107 @@ public class ShowAllVPNsActivity extends Activity
 	private final int CONTEXT_DISCONNECT = 1;
 	private final int CONTEXT_EDIT = 2;
 	private final int CONTEXT_DELETE = 3;
-
+	
+	private static String masterPassword = new String();
+	private static int masterPasswordRowId = -1;
+	private static ArrayAdapter<String> toolButtonsAdapter;
+	
+	/*
+	 * Converts input into an md5-hashed String representation.
+	 */
+	
+	private String md5(String input) throws NoSuchAlgorithmException 
+	{
+		MessageDigest m = MessageDigest.getInstance("MD5");
+		byte[] data = input.getBytes(); 
+		m.update(data, 0, data.length);
+		BigInteger i = new BigInteger(1, m.digest());
+		return String.format("%1$032X", i);
+	}
+	
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.main);
 
-    	// There is only one action in the following list, but that's 
-    	// how the actual VPN client GUI works as well...
-    	String[] buttonEntries = new String[] { "Add VPN" };
-    	
-        addLV = (ListView)findViewById(R.id.listView0);
-        addLV.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries));
-        addLV.setOnItemClickListener(new OnItemClickListener() {
-        	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        		Intent intent = new Intent(Intent.ACTION_VIEW);
-        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
-        		startActivity(intent);
-            } 
-        }); 
-        
-    	// Read data from SQLite DB
+    	// Get stored VPNs from DB
     	dbA = new DatabaseAdapter(this);
     	dbA.open();
 
     	cursor = dbA.getVPNCursor();
     	startManagingCursor(cursor);
-    	
-    	MyCustomAdapter adapter = new MyCustomAdapter(this, cursor);
-    	
-        vpnLV = (ListView)findViewById(R.id.listView1);
+
+    	DBMCustomAdapter adapter = new DBMCustomAdapter(this, cursor);
+    	vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(adapter);
     	registerForContextMenu(vpnLV);
-    }
+
+    	// Get stored master password from DB
+    	cursor = dbA.getPrefsCursor();
+    	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+    		if (cursor.getString(0).equals("master_password")) {
+    			masterPassword = cursor.getString(1);
+    			masterPasswordRowId = cursor.getInt(2);
+    		}
+    	}
+    	
+    	System.out.println("Read password: " + masterPassword);
+    	
+    	String[] buttonEntries = new String[] { 
+    			"Add VPN", 
+    			(masterPassword.isEmpty()? "Set master password" : "Change master password") };
+    	toolButtonsAdapter = 
+    		new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries);
+    	
+        addLV = (ListView)findViewById(R.id.listView0);
+    	addLV.setAdapter(toolButtonsAdapter);
+        addLV.setOnItemClickListener(new OnItemClickListener() {
+        	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        		switch (position) {
+        		case 0: // Add VPN
+	        		Intent intent = new Intent(Intent.ACTION_VIEW);
+	        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
+	        		startActivity(intent);
+	        		break;
+        		case 1: // Set/change master password
+    				AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
+    				builder.setTitle("Set master password");
+
+    				final EditText input = new EditText(ShowAllVPNsActivity.this);
+    				builder.setView(input);
+    				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+    					public void onClick(DialogInterface dialog, int whichButton) {
+							try {
+								ContentValues values = new ContentValues();
+								values.put("_id", "master_password");
+								values.put("value", md5(input.getText().toString().trim()));
+
+								// TODO: Having to store the rowid is really fugly...
+								if (masterPasswordRowId < 0)
+									System.out.println("Insert password: " + dbA.insert("prefs", values));
+								else
+									System.out.println("Insert password: " + dbA.update(masterPasswordRowId, "prefs", values));
+							} catch (NoSuchAlgorithmException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+    					}
+    				});
+    				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+    					public void onClick(DialogInterface dialog, int whichButton) {
+    						dialog.cancel();
+						}
+					});
+
+    				AlertDialog alert = builder.create();
+    				alert.show();
+        			
+        			break;
+        		}
+            } 
+        }); 
+	}
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
@@ -248,8 +322,8 @@ public class ShowAllVPNsActivity extends Activity
 			}
     	case CONTEXT_DELETE: {
     		dbA.deleteVPN(selectedVPN);
-    		((MyCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
-    		((MyCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
+    		((DBMCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
+    		((DBMCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
     		return true; 
     		}
     	case CONTEXT_EDIT: {
@@ -275,7 +349,7 @@ public class ShowAllVPNsActivity extends Activity
     // change/update the connection status of the respective connection
     // rather than displaying the connection's type (e.g. PPTP)
     
-    private class MyCustomAdapter extends CursorAdapter 
+    private class DBMCustomAdapter extends CursorAdapter 
 	{
 		private ArrayList<String[]> data = new ArrayList<String[]>();
         private LayoutInflater mInflater;
@@ -325,7 +399,7 @@ public class ShowAllVPNsActivity extends Activity
 		    return LayoutInflater.from(context).inflate(R.layout.doublelistviewitem, parent, false);
 		}
 		
-        public MyCustomAdapter(Context context, Cursor cursor)
+        public DBMCustomAdapter(Context context, Cursor cursor)
         {
 			super(context, cursor);
 
