@@ -40,6 +40,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 
+import org.apache.commons.net.util.Base64;
+
 public class ShowAllVPNsActivity extends Activity 
 { 
     private ListView vpnLV, addLV;
@@ -82,6 +84,11 @@ public class ShowAllVPNsActivity extends Activity
     	cursor = dbA.getVPNCursor();
     	startManagingCursor(cursor);
 
+    	// /////////////////
+    	// TODO: For testing
+    	dbA.deletePW();
+    	// /////////////////
+    	
     	DBMCustomAdapter adapter = new DBMCustomAdapter(this, cursor);
     	vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(adapter);
@@ -96,11 +103,9 @@ public class ShowAllVPNsActivity extends Activity
     		}
     	}
     	
-    	System.out.println("Read password: " + masterPassword);
-    	
-    	String[] buttonEntries = new String[] { 
-    			"Add VPN", 
-    			(masterPassword.isEmpty()? "Set master password" : "Change master password") };
+    	ArrayList<String> buttonEntries = new ArrayList<String>();
+    	buttonEntries.add("Add VPN");
+    	buttonEntries.add(masterPassword.isEmpty()? "Set master password" : "Change master password"); 
     	toolButtonsAdapter = 
     		new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries);
     	
@@ -110,9 +115,23 @@ public class ShowAllVPNsActivity extends Activity
         	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         		switch (position) {
         		case 0: // Add VPN
-	        		Intent intent = new Intent(Intent.ACTION_VIEW);
-	        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
-	        		startActivity(intent);
+        			if (masterPasswordRowId >= 0) {
+	        			Intent intent = new Intent(Intent.ACTION_VIEW);
+		        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
+		        		startActivity(intent);
+        			}
+        			else {
+        				AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
+        				builder.setTitle("Master password not set");
+        				builder.setMessage("You must first set a master password, before you can add accounts.");
+        				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+        					public void onClick(DialogInterface dialog, int whichButton) {
+        						dialog.cancel();
+        					}
+        				});
+        				AlertDialog alert = builder.create();
+        				alert.show();
+        			}
 	        		break;
         		case 1: // Set/change master password
     				AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
@@ -121,17 +140,25 @@ public class ShowAllVPNsActivity extends Activity
     				final EditText input = new EditText(ShowAllVPNsActivity.this);
     				builder.setView(input);
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-    					public void onClick(DialogInterface dialog, int whichButton) {
+    					@SuppressWarnings("unchecked")
+						public void onClick(DialogInterface dialog, int whichButton) {
 							try {
 								ContentValues values = new ContentValues();
 								values.put("_id", "master_password");
 								values.put("value", md5(input.getText().toString().trim()));
 
 								// TODO: Having to store the rowid is really fugly...
-								if (masterPasswordRowId < 0)
-									System.out.println("Insert password: " + dbA.insert("prefs", values));
+								if (masterPasswordRowId < 0) {
+									if ((masterPasswordRowId = (int)dbA.insert("prefs", values)) >= 0) {
+										final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
+										tAdapter.remove("Set master password");
+										tAdapter.insert("Change master password", 1);
+										tAdapter.notifyDataSetChanged();
+									}
+								}
 								else
-									System.out.println("Insert password: " + dbA.update(masterPasswordRowId, "prefs", values));
+									dbA.update(masterPasswordRowId, "prefs", values);
+								
 							} catch (NoSuchAlgorithmException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
