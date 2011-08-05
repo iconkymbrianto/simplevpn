@@ -86,7 +86,7 @@ public class ShowAllVPNsActivity extends Activity
 
     	// /////////////////
     	// TODO: For testing
-    	dbA.deletePW();
+    	// dbA.deletePW();
     	// /////////////////
     	
     	DBMCustomAdapter adapter = new DBMCustomAdapter(this, cursor);
@@ -142,27 +142,29 @@ public class ShowAllVPNsActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					@SuppressWarnings("unchecked")
 						public void onClick(DialogInterface dialog, int whichButton) {
-							try {
-								ContentValues values = new ContentValues();
-								values.put("_id", "master_password");
-								values.put("value", md5(input.getText().toString().trim()));
-
-								// TODO: Having to store the rowid is really fugly...
-								if (masterPasswordRowId < 0) {
-									if ((masterPasswordRowId = (int)dbA.insert("prefs", values)) >= 0) {
-										final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
-										tAdapter.remove("Set master password");
-										tAdapter.insert("Change master password", 1);
-										tAdapter.notifyDataSetChanged();
+    						if (!input.getText().toString().isEmpty()) {
+								try {
+									ContentValues values = new ContentValues();
+									values.put("_id", "master_password");
+									values.put("value", md5(input.getText().toString().trim()));
+	
+									// TODO: Having to store the rowid is really fugly...
+									if (masterPasswordRowId < 0) {
+										if ((masterPasswordRowId = (int)dbA.insert("prefs", values)) >= 0) {
+											final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
+											tAdapter.remove("Set master password");
+											tAdapter.insert("Change master password", 1);
+											tAdapter.notifyDataSetChanged();
+										}
 									}
+									else
+										dbA.update(masterPasswordRowId, "prefs", values);
+									
+								} catch (NoSuchAlgorithmException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
 								}
-								else
-									dbA.update(masterPasswordRowId, "prefs", values);
-								
-							} catch (NoSuchAlgorithmException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+    						}
     					}
     				});
     				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
