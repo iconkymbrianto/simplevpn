@@ -67,6 +67,10 @@ public class DatabaseAdapter
 		}
 	}
 
+	public void deletePW() {
+		db.delete("prefs", "_id=?", new String[] { "master_password" });
+	}
+	
 	public void deleteVPN(String name)
 	{
 		if (db != null) {
