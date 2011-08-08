@@ -201,10 +201,24 @@ public class AddPPTPVPNActivity extends Activity
 
         adapter.addItem("VPN name", 
 				pptpProfile.getName() == null? "VPN name not set" : pptpProfile.getName());
-        adapter.addItem("Username", 
-				pptpProfile.getName() == null? "Username not set" : "<Secret>");
-        adapter.addItem("Password", 
-				pptpProfile.getEncPassword() == null? "Password not set" : "<Secret>");
+        try {
+			adapter.addItem("Username", 
+					pptpProfile.getEncUsername() == null? "Username not set" : 
+								Encryption.decrypt(pptpProfile.getEncUsername(), prefs.getMasterPassword()));
+		} catch (Exception e1) {
+			adapter.addItem("Username", "<decryption failed>");
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+        try {
+			adapter.addItem("Password", 
+					pptpProfile.getEncPassword() == null? "Password not set" : 
+								Encryption.decrypt(pptpProfile.getEncPassword(), prefs.getMasterPassword()));
+		} catch (Exception e1) {
+			adapter.addItem("Password", "<decryption failed>");
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
         adapter.addItem("Set VPN server", 
         		pptpProfile.getServer() == null? "VPN server is not set" : pptpProfile.getServer());
         adapter.addItemButton("Enable encryption", 
