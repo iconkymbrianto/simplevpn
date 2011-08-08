@@ -37,6 +37,32 @@ public class AddPPTPVPNActivity extends Activity
 	private PPTPNetwork pptpProfile = new PPTPNetwork();
 	private String oldVPNName = null;
 	
+	private final Preferences prefs = Preferences.getInstance();
+	
+	public void displayNotEnoughDataError()
+	{
+		AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+        dlgAlert.setTitle("Attention");
+        dlgAlert.setPositiveButton("Back", null);
+        dlgAlert.setCancelable(true);
+		
+        if (pptpProfile.getName() == null)
+        	dlgAlert.setMessage("Enter VPN name");
+        else
+        	dlgAlert.setMessage("Enter VPN server");
+        
+        dlgAlert.setPositiveButton("Back", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+        		Intent intent = new Intent(Intent.ACTION_VIEW);
+        		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
+        		startActivity(intent);
+        		finish();
+			}
+		});
+        
+		dlgAlert.create().show();
+	}
+	
 	@Override
 	public void onBackPressed() 
 	{
@@ -49,30 +75,8 @@ public class AddPPTPVPNActivity extends Activity
     		startActivity(intent);
     		finish();
 		}
-		else {
-			AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
-	        dlgAlert.setTitle("Attention");
-	        dlgAlert.setPositiveButton("Back", null);
-	        dlgAlert.setCancelable(true);
-			
-	        if (pptpProfile.getName() == null)
-	        	dlgAlert.setMessage("Enter VPN name");
-	        else
-	        	dlgAlert.setMessage("Enter VPN server");
-	        
-	        dlgAlert.setPositiveButton("Back", new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int whichButton) {
-	        		Intent intent = new Intent(Intent.ACTION_VIEW);
-	        		intent.setClassName(AddPPTPVPNActivity.this, ShowAllVPNsActivity.class.getName());
-	        		startActivity(intent);
-	        		finish();
-				}
-			});
-	        
-			dlgAlert.create().show();
-		}			
-
-		return;
+		else
+			displayNotEnoughDataError();
 	}
 	
     @Override
@@ -152,10 +156,15 @@ public class AddPPTPVPNActivity extends Activity
 
 		switch (item.getItemId()) {
     	case saveVPNBtnId:
-    		deleteOldVPNData();
-    		writeVPNData();
-    		startActivity(intent);
-    		finish();
+    		if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
+	    		deleteOldVPNData();
+	    		writeVPNData();
+	    		startActivity(intent);
+	    		finish();
+    		}
+    		else
+    			displayNotEnoughDataError();
+    		
     		return true;
     	case cancelVPNBtnId:
     		startActivity(intent);
@@ -242,24 +251,16 @@ public class AddPPTPVPNActivity extends Activity
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter());
     						
-    						
-    						
-    						// TODO: Encrypt username and store
     						try {
-    							String secret = Encryption.encrypt(input.getText().toString(), "andi");
-								System.out.println("Enc: " + secret);
-								System.out.println("Dec: " + Encryption.decrypt(secret, "andi"));
+								pptpProfile.setEncUsername(Encryption.encrypt(input.getText().toString().trim(),
+														   prefs.getMasterPassword()));
+								((String[])(adapter.getItem(1)))[1] = pptpProfile.getEncUsername();
+	    						adapter.notifyDataSetChanged();
 							} catch (Exception e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+								SimpleAlertBox.display("Cannot store profile data",
+											 		   "Encryption of username failed.", 
+											 		   AddPPTPVPNActivity.this);
 							}
-    						
-    						
-    						
-    						
-    						pptpProfile.setEncUsername(input.getText().toString().trim());
-    						((String[])(adapter.getItem(1)))[1] = pptpProfile.getEncUsername();
-    						adapter.notifyDataSetChanged();
     					}
     				});
     				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -281,10 +282,17 @@ public class AddPPTPVPNActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter());
-    						// TODO: Encrypt password and store
-    						pptpProfile.setEncPassword(input.getText().toString().trim());
-    						((String[])(adapter.getItem(2)))[1] = pptpProfile.getEncPassword();
-    						adapter.notifyDataSetChanged();
+
+    						try {
+								pptpProfile.setEncPassword(Encryption.encrypt(input.getText().toString().trim(),
+														   prefs.getMasterPassword()));
+	    						((String[])(adapter.getItem(2)))[1] = pptpProfile.getEncPassword();
+	    						adapter.notifyDataSetChanged();
+							} catch (Exception e) {
+								SimpleAlertBox.display("Cannot store profile data",
+											 		   "Encryption of password failed.", 
+											 		   AddPPTPVPNActivity.this);
+							}
     					}
     				});
     				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
