@@ -241,7 +241,22 @@ public class AddPPTPVPNActivity extends Activity
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					public void onClick(DialogInterface dialog, int whichButton) {
     						final MyCustomAdapter adapter = ((MyCustomAdapter)lv1.getAdapter());
+    						
+    						
+    						
     						// TODO: Encrypt username and store
+    						try {
+    							String secret = Encryption.encrypt(input.getText().toString(), "andi");
+								System.out.println("Enc: " + secret);
+								System.out.println("Dec: " + Encryption.decrypt(secret, "andi"));
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+    						
+    						
+    						
+    						
     						pptpProfile.setEncUsername(input.getText().toString().trim());
     						((String[])(adapter.getItem(1)))[1] = pptpProfile.getEncUsername();
     						adapter.notifyDataSetChanged();

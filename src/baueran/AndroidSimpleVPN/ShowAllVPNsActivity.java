@@ -2,8 +2,6 @@ package baueran.AndroidSimpleVPN;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
@@ -40,8 +38,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 
-import org.apache.commons.net.util.Base64;
-
 public class ShowAllVPNsActivity extends Activity 
 { 
     private ListView vpnLV, addLV;
@@ -57,19 +53,6 @@ public class ShowAllVPNsActivity extends Activity
 	private static String masterPassword = new String();
 	private static int masterPasswordRowId = -1;
 	private static ArrayAdapter<String> toolButtonsAdapter;
-	
-	/*
-	 * Converts input into an md5-hashed String representation.
-	 */
-	
-	private String md5(String input) throws NoSuchAlgorithmException 
-	{
-		MessageDigest m = MessageDigest.getInstance("MD5");
-		byte[] data = input.getBytes(); 
-		m.update(data, 0, data.length);
-		BigInteger i = new BigInteger(1, m.digest());
-		return String.format("%1$032X", i);
-	}
 	
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -146,7 +129,7 @@ public class ShowAllVPNsActivity extends Activity
 								try {
 									ContentValues values = new ContentValues();
 									values.put("_id", "master_password");
-									values.put("value", md5(input.getText().toString().trim()));
+									values.put("value", Encryption.md5(input.getText().toString().trim()));
 	
 									// TODO: Having to store the rowid is really fugly...
 									if (masterPasswordRowId < 0) {
