@@ -216,6 +216,8 @@ public class ShowAllVPNsActivity extends Activity
 	    			profile.setServer(cursor.getString(1));
 	    			profile.setEncEnabled(cursor.getInt(2) == 1? true : false);
 	    			profile.setDomains(cursor.getString(3));
+	    			profile.setEncUsername(cursor.getString(4));
+	    			profile.setEncPassword(cursor.getString(5));
 	    			break;
 	    		}
 	    	}
