@@ -1,7 +1,6 @@
 package baueran.AndroidSimpleVPN;
 
 import java.math.BigInteger;
-import java.security.AlgorithmParameters;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +41,7 @@ public class Encryption
 	 }
 
 	 // TODO: Static initialisation is probably not a good idea...
+	 
 	 private static byte[] iv = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 		 						 0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
@@ -49,8 +49,13 @@ public class Encryption
 	 {
 		 Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 		 cipher.init(Cipher.ENCRYPT_MODE, generateKey(password), new IvParameterSpec(iv));
+		 
+		 // TODO: If no static key is used, remove last parameter in the above
+		 // init call and uncomment the next two lines:
+		 // 
 		 // AlgorithmParameters params = cipher.getParameters();
 		 // iv = params.getParameterSpec(IvParameterSpec.class).getIV();
+
 		 byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-8"));
 		 return new String(Base64.encodeBase64(ciphertext));
 	 }
@@ -59,7 +64,7 @@ public class Encryption
 	 {
 		 byte[] encrypted = Base64.decodeBase64(encryptedRaw);
 		 Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-		 cipher.init(Cipher.DECRYPT_MODE, generateKey("andi"), new IvParameterSpec(iv));
+		 cipher.init(Cipher.DECRYPT_MODE, generateKey(password), new IvParameterSpec(iv));
 		 String plaintext = new String(cipher.doFinal(encrypted), "UTF-8");
 		 return plaintext;
 	 }

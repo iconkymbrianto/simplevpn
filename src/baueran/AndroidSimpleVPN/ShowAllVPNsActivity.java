@@ -50,9 +50,10 @@ public class ShowAllVPNsActivity extends Activity
 	private final int CONTEXT_EDIT = 2;
 	private final int CONTEXT_DELETE = 3;
 	
-	private static String masterPassword = new String();
-	private static int masterPasswordRowId = -1;
+//	private static String masterPassword = new String();
+//	private static int masterPasswordRowId = -1;
 	private static ArrayAdapter<String> toolButtonsAdapter;
+	private final Preferences prefs = Preferences.getInstance();
 	
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -81,14 +82,14 @@ public class ShowAllVPNsActivity extends Activity
     	cursor = dbA.getPrefsCursor();
     	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
     		if (cursor.getString(0).equals("master_password")) {
-    			masterPassword = cursor.getString(1);
-    			masterPasswordRowId = cursor.getInt(2);
+    			prefs.setMasterPassword(cursor.getString(1));
+    			prefs.setMasterPasswordRowId(cursor.getInt(2));
     		}
     	}
     	
     	ArrayList<String> buttonEntries = new ArrayList<String>();
     	buttonEntries.add("Add VPN");
-    	buttonEntries.add(masterPassword.isEmpty()? "Set master password" : "Change master password"); 
+    	buttonEntries.add(prefs.getMasterPassword().isEmpty()? "Set master password" : "Change master password"); 
     	toolButtonsAdapter = 
     		new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries);
     	
@@ -98,7 +99,7 @@ public class ShowAllVPNsActivity extends Activity
         	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         		switch (position) {
         		case 0: // Add VPN
-        			if (masterPasswordRowId >= 0) {
+        			if (prefs.getMasterPasswordRowId() >= 0) {
 	        			Intent intent = new Intent(Intent.ACTION_VIEW);
 		        		intent.setClassName(ShowAllVPNsActivity.this, AddVPNActivity.class.getName());
 		        		startActivity(intent);
@@ -132,8 +133,9 @@ public class ShowAllVPNsActivity extends Activity
 									values.put("value", Encryption.md5(input.getText().toString().trim()));
 	
 									// TODO: Having to store the rowid is really fugly...
-									if (masterPasswordRowId < 0) {
-										if ((masterPasswordRowId = (int)dbA.insert("prefs", values)) >= 0) {
+									if (prefs.getMasterPasswordRowId() < 0) {
+										prefs.setMasterPasswordRowId((int)dbA.insert("prefs", values));
+										if (prefs.getMasterPasswordRowId() >= 0) {
 											final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
 											tAdapter.remove("Set master password");
 											tAdapter.insert("Change master password", 1);
@@ -141,7 +143,7 @@ public class ShowAllVPNsActivity extends Activity
 										}
 									}
 									else
-										dbA.update(masterPasswordRowId, "prefs", values);
+										dbA.update(prefs.getMasterPasswordRowId(), "prefs", values);
 									
 								} catch (NoSuchAlgorithmException e) {
 									// TODO Auto-generated catch block
