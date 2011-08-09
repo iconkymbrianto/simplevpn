@@ -8,6 +8,18 @@ public class VPNNetwork
 	private String domains = null;
 	private String encUsername = null;
 	private String encPassword = null;
+
+//	private Boolean _isConnected = false;
+//	
+//	public Boolean isConnected()
+//	{
+//		return _isConnected;
+//	}
+//	
+//	public void setConnected(Boolean state)
+//	{
+//		_isConnected = state;
+//	}
 	
 	public void setName(String name) 
 	{

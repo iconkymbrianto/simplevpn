@@ -44,16 +44,15 @@ public class ShowAllVPNsActivity extends Activity
     private DatabaseAdapter dbA;
     private Cursor cursor = null;
     private VPNNetwork selectedVPNProfile = null;
+	private final Preferences prefs = Preferences.getInstance();
     
 	private final int CONTEXT_CONNECT = 0;
 	private final int CONTEXT_DISCONNECT = 1;
 	private final int CONTEXT_EDIT = 2;
 	private final int CONTEXT_DELETE = 3;
 	
-//	private static String masterPassword = new String();
-//	private static int masterPasswordRowId = -1;
-	private static ArrayAdapter<String> toolButtonsAdapter;
-	private final Preferences prefs = Preferences.getInstance();
+	private static DBMCustomAdapter     dbmAdapter = null;
+	private static ArrayAdapter<String> toolButtonsAdapter = null;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -68,14 +67,14 @@ public class ShowAllVPNsActivity extends Activity
     	cursor = dbA.getVPNCursor();
     	startManagingCursor(cursor);
 
-    	// /////////////////
-    	// TODO: For testing
+    	// //////////////////////////////////////////////////
+    	// TODO: For testing: delete master password on start
     	// dbA.deletePW();
-    	// /////////////////
+    	// //////////////////////////////////////////////////
     	
-    	DBMCustomAdapter adapter = new DBMCustomAdapter(this, cursor);
+    	dbmAdapter = new DBMCustomAdapter(this, cursor);
     	vpnLV = (ListView)findViewById(R.id.listView1);
-        vpnLV.setAdapter(adapter);
+        vpnLV.setAdapter(dbmAdapter);
     	registerForContextMenu(vpnLV);
 
     	// Get stored master password from DB
@@ -179,8 +178,66 @@ public class ShowAllVPNsActivity extends Activity
     	menu.add(0, CONTEXT_EDIT, CONTEXT_EDIT, "Edit network");
     	menu.add(0, CONTEXT_DELETE, CONTEXT_DELETE, "Delete network");
 
-    	// TODO: Dynamically determine whether or not the connection is enabled
-    	menu.getItem(1).setEnabled(false);
+    	final Boolean connected = prefs.currentlyConnectedNetwork().equals(selectedVPN);
+    	menu.getItem(0).setEnabled(!connected);
+    	menu.getItem(1).setEnabled(connected);
+    }
+
+    @Override 
+    public boolean onContextItemSelected(MenuItem item) 
+    {
+		final ContextMenuInfo menuInfo = item.getMenuInfo();
+    	final AdapterView.AdapterContextMenuInfo info =	(AdapterView.AdapterContextMenuInfo)menuInfo;
+    	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
+
+		switch (item.getItemId()) {
+		case CONTEXT_CONNECT: {
+			final VPNNetwork profile = getProfile(selectedVPN); 
+
+			if (connectVPN(profile)) {
+				prefs.setCurrentlyConnectedNetwork(profile.getName());
+				System.out.println("Profile connected!!!!!!!!!!!");
+			}
+			else {
+				prefs.unsetCurrentlyConnectedNetwork();
+				System.out.println("Profile NOT connected!!!!!!!!!!!");
+			}
+	
+			dbmAdapter.notifyDataSetChanged();
+			
+			return true;
+			}
+		case CONTEXT_DISCONNECT: {
+			disconnectVPN();
+			prefs.unsetCurrentlyConnectedNetwork();
+			System.out.println("Profile NOT connected!!!!!!!!!!!");
+
+			dbmAdapter.notifyDataSetChanged();
+			
+			return true;
+			}
+    	case CONTEXT_DELETE: {
+    		dbA.deleteVPN(selectedVPN);
+    		((DBMCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
+    		((DBMCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
+    		return true; 
+    		}
+    	case CONTEXT_EDIT: {
+    		Bundle bundle = new Bundle();
+    		bundle.putString("name", selectedVPN);
+    		
+    		// TODO: This calls PPTP profiles by default.  Look up which profile is
+    		// associated to the name, then call the right activity for edit.
+    		Intent intent = new Intent(Intent.ACTION_VIEW);
+    		intent.setClassName(ShowAllVPNsActivity.this, AddPPTPVPNActivity.class.getName());
+    		intent.putExtras(bundle); // Send VPN network name to be edited to activity
+    		startActivity(intent);
+    		finish();
+    		return true;
+    		}
+		}
+    	
+    	return false;
     }
 
     public VPNNetwork getProfile(String vpnName)
@@ -296,6 +353,11 @@ public class ShowAllVPNsActivity extends Activity
 		}
 	};
 
+	public void disconnectVPN()
+	{
+		unbindService(mConnection);
+	}
+	
 	public boolean connectVPN(VPNNetwork profile)
     {
     	boolean connected = false;
@@ -315,51 +377,7 @@ public class ShowAllVPNsActivity extends Activity
 
     	return connected;
     }
-    
-    @Override 
-    public boolean onContextItemSelected(MenuItem item) 
-    {
-		final ContextMenuInfo menuInfo = item.getMenuInfo();
-    	final AdapterView.AdapterContextMenuInfo info =	(AdapterView.AdapterContextMenuInfo)menuInfo;
-    	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
-
-		switch (item.getItemId()) {
-		case CONTEXT_CONNECT: {
-			VPNNetwork profile = getProfile(selectedVPN); 
-
-			if (connectVPN(profile)) {
-				System.out.println("Profile connected!!!!!!!!!!!");
-				// TODO: Update context menu
-			}
-			else
-				System.out.println("Profile NOT connected!!!!!!!!!!!");
-
-			return true;
-			}
-    	case CONTEXT_DELETE: {
-    		dbA.deleteVPN(selectedVPN);
-    		((DBMCustomAdapter)vpnLV.getAdapter()).deleteVPN(selectedVPN);
-    		((DBMCustomAdapter)vpnLV.getAdapter()).notifyDataSetChanged(); 
-    		return true; 
-    		}
-    	case CONTEXT_EDIT: {
-    		Bundle bundle = new Bundle();
-    		bundle.putString("name", selectedVPN);
-    		
-    		// TODO: This calls PPTP profiles by default.  Look up which profile is
-    		// associated to the name, then call the right activity for edit.
-    		Intent intent = new Intent(Intent.ACTION_VIEW);
-    		intent.setClassName(ShowAllVPNsActivity.this, AddPPTPVPNActivity.class.getName());
-    		intent.putExtras(bundle); // Send VPN network name to be edited to activity
-    		startActivity(intent);
-    		finish();
-    		return true;
-    		}
-		}
-    	
-    	return false;
-    }
-    
+        
     // The custom adapter is necessary because a SimpleCursorAdapter
     // is more or less a 1:1 mapping from DB to view, and I need to
     // change/update the connection status of the respective connection
@@ -371,21 +389,18 @@ public class ShowAllVPNsActivity extends Activity
         private LayoutInflater mInflater;
         private ViewHolder holder;
 
-        // TODO: Not sure when/if this is called...
 		@Override
 		public void bindView(View view, Context context, Cursor cursor) 
 		{
 		    final String name = cursor.getString(cursor.getColumnIndex("_id"));
-		    // final String type = cursor.getString(cursor.getColumnIndex("type"));
             ((TextView)view.findViewById(R.id.name_entry)).setText(name);
             ((TextView)view.findViewById(R.id.type_entry)).setText("Connect to network");
-            // ((TextView)view.findViewById(R.id.type_entry)).setText(type);
 		}
 		 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
-			if (convertView == null) {
+	    	if (convertView == null) {
 				convertView = mInflater.inflate(R.layout.doublelistviewitem, null);
 				holder = new ViewHolder();
                 holder.text1 = (TextView)convertView.findViewById(R.id.name_entry);
@@ -396,7 +411,11 @@ public class ShowAllVPNsActivity extends Activity
 			}
 
 			holder.text1.setText(data.get(position)[0]);
-			holder.text2.setText("Connect to network");
+			
+			if (prefs.currentlyConnectedNetwork().equals(data.get(position)[0]))
+				holder.text2.setText("Connected");
+			else
+				holder.text2.setText("Connect to network");
 			// holder.text2.setText(data.get(position)[1]);
 			convertView.setTag(holder);
 
