@@ -54,6 +54,48 @@ public class ShowAllVPNsActivity extends Activity
 	private static DBMCustomAdapter     dbmAdapter = null;
 	private static ArrayAdapter<String> toolButtonsAdapter = null;
 	
+	private void displayPasswordInputDlg(String pw, int att)
+	{
+		final int attempts = att;
+		final String encPassword = pw;
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
+		builder.setMessage(attempts + " left");
+		builder.setMessage("Enter master password");
+
+		final EditText input = new EditText(ShowAllVPNsActivity.this);
+		builder.setView(input);
+		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				try {
+					if (Encryption.md5(input.getText().toString()).equals(encPassword)) {
+						prefs.setMasterPassword(input.getText().toString());
+						dialog.cancel();
+					}
+					else if (attempts > 0) {
+						dialog.cancel();
+						displayPasswordInputDlg(encPassword, attempts - 1);
+					}
+					else
+						finish();
+				} catch (NoSuchAlgorithmException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					finish();
+				}
+			}
+		});
+		builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				dialog.cancel();
+				finish();
+			}
+		});
+
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+	
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
@@ -71,7 +113,7 @@ public class ShowAllVPNsActivity extends Activity
     	// TODO: For testing: delete master password on start
     	// dbA.deletePW();
     	// //////////////////////////////////////////////////
-    	
+
     	dbmAdapter = new DBMCustomAdapter(this, cursor);
     	vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(dbmAdapter);
@@ -88,20 +130,20 @@ public class ShowAllVPNsActivity extends Activity
 			}
         });
         registerForContextMenu(vpnLV);
-
-    	// Get stored master password from DB
+        
+    	// Get stored, encrypted master password from DB
     	cursor = dbA.getPrefsCursor();
     	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
     		if (cursor.getString(0).equals("master_password")) {
-    			prefs.setMasterPassword(cursor.getString(1));
+    			final String encPassword = cursor.getString(1);
     			prefs.setMasterPasswordRowId(cursor.getInt(2));
-    			System.out.println("Master password: " + prefs.getMasterPassword());
+    			displayPasswordInputDlg(encPassword, 3);
     		}
     	}
-    	
+
     	ArrayList<String> buttonEntries = new ArrayList<String>();
     	buttonEntries.add("Add VPN");
-    	buttonEntries.add(prefs.getMasterPassword().isEmpty()? "Set master password" : "Change master password"); 
+    	buttonEntries.add(prefs.getMasterPasswordRowId() < 0? "Set master password" : "Change master password"); 
     	toolButtonsAdapter = 
     		new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, buttonEntries);
     	
@@ -155,9 +197,12 @@ public class ShowAllVPNsActivity extends Activity
 											tAdapter.notifyDataSetChanged();
 										}
 									}
-									else
+									else {
 										dbA.update(prefs.getMasterPasswordRowId(), "prefs", values);
-									
+										// TODO: Recode all usernames and passwords in the DBMS with new password
+										// ...
+									}
+									prefs.setMasterPassword(input.getText().toString().trim());
 								} catch (NoSuchAlgorithmException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();

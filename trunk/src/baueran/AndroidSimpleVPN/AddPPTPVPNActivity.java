@@ -48,10 +48,8 @@ public class AddPPTPVPNActivity extends Activity
 		
         if (pptpProfile.getName() == null)
         	dlgAlert.setMessage("Enter VPN name");
-        else if (pptpProfile.getServer() == null)
+        else 
         	dlgAlert.setMessage("Enter VPN server");
-        else
-        	dlgAlert.setMessage("VPN name is already taken");
         
         dlgAlert.setPositiveButton("Back", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
@@ -70,13 +68,6 @@ public class AddPPTPVPNActivity extends Activity
 	
 	private boolean maySaveProfile()
 	{
-    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
-    	Cursor result           = adapter.getPPTPCursor();
-
-    	for (result.moveToFirst(); !result.isAfterLast(); result.moveToNext())
-    		if (result.getString(0).equals(pptpProfile.getName()))
-    			return false;
-    	
 		return (pptpProfile.getName() != null && pptpProfile.getServer() != null);
 	}
 	
