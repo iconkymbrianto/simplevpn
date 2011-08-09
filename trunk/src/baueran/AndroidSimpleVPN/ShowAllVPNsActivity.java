@@ -75,7 +75,19 @@ public class ShowAllVPNsActivity extends Activity
     	dbmAdapter = new DBMCustomAdapter(this, cursor);
     	vpnLV = (ListView)findViewById(R.id.listView1);
         vpnLV.setAdapter(dbmAdapter);
-    	registerForContextMenu(vpnLV);
+        vpnLV.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
+				String selectedNetwork = ((String[])dbmAdapter.getItem(position))[0];
+				VPNNetwork profile = getProfile(selectedNetwork);
+
+				if (prefs.currentlyConnectedNetwork().isEmpty() && connectVPN(profile)) {
+					prefs.setCurrentlyConnectedNetwork(selectedNetwork);
+					dbmAdapter.notifyDataSetChanged();
+				}
+			}
+        });
+        registerForContextMenu(vpnLV);
 
     	// Get stored master password from DB
     	cursor = dbA.getPrefsCursor();
@@ -83,6 +95,7 @@ public class ShowAllVPNsActivity extends Activity
     		if (cursor.getString(0).equals("master_password")) {
     			prefs.setMasterPassword(cursor.getString(1));
     			prefs.setMasterPasswordRowId(cursor.getInt(2));
+    			System.out.println("Master password: " + prefs.getMasterPassword());
     		}
     	}
     	
@@ -95,6 +108,7 @@ public class ShowAllVPNsActivity extends Activity
         addLV = (ListView)findViewById(R.id.listView0);
     	addLV.setAdapter(toolButtonsAdapter);
         addLV.setOnItemClickListener(new OnItemClickListener() {
+			@Override
         	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         		switch (position) {
         		case 0: // Add VPN
@@ -178,9 +192,8 @@ public class ShowAllVPNsActivity extends Activity
     	menu.add(0, CONTEXT_EDIT, CONTEXT_EDIT, "Edit network");
     	menu.add(0, CONTEXT_DELETE, CONTEXT_DELETE, "Delete network");
 
-    	final Boolean connected = prefs.currentlyConnectedNetwork().equals(selectedVPN);
-    	menu.getItem(0).setEnabled(!connected);
-    	menu.getItem(1).setEnabled(connected);
+    	menu.getItem(0).setEnabled(prefs.currentlyConnectedNetwork().isEmpty());
+    	menu.getItem(1).setEnabled(prefs.currentlyConnectedNetwork().equals(selectedVPN));
     }
 
     @Override 
@@ -196,24 +209,15 @@ public class ShowAllVPNsActivity extends Activity
 
 			if (connectVPN(profile)) {
 				prefs.setCurrentlyConnectedNetwork(profile.getName());
-				System.out.println("Profile connected!!!!!!!!!!!");
+				dbmAdapter.notifyDataSetChanged();
 			}
-			else {
-				prefs.unsetCurrentlyConnectedNetwork();
-				System.out.println("Profile NOT connected!!!!!!!!!!!");
-			}
-	
-			dbmAdapter.notifyDataSetChanged();
 			
 			return true;
 			}
 		case CONTEXT_DISCONNECT: {
 			disconnectVPN();
 			prefs.unsetCurrentlyConnectedNetwork();
-			System.out.println("Profile NOT connected!!!!!!!!!!!");
-
 			dbmAdapter.notifyDataSetChanged();
-			
 			return true;
 			}
     	case CONTEXT_DELETE: {
@@ -346,6 +350,9 @@ public class ShowAllVPNsActivity extends Activity
 			Toast.makeText(getApplicationContext(), "VPN should be ready now", Toast.LENGTH_LONG).show();
 		}
 
+		// According to documentation, the following callback is not invoked
+		// upon unbind, but upon a crash!
+		
 		@Override
 		public void onServiceDisconnected(ComponentName name) 
 		{

@@ -42,14 +42,16 @@ public class AddPPTPVPNActivity extends Activity
 	public void displayNotEnoughDataError()
 	{
 		AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
-        dlgAlert.setTitle("Attention");
+        dlgAlert.setTitle("Could not save profile");
         dlgAlert.setPositiveButton("Back", null);
         dlgAlert.setCancelable(true);
 		
         if (pptpProfile.getName() == null)
         	dlgAlert.setMessage("Enter VPN name");
-        else
+        else if (pptpProfile.getServer() == null)
         	dlgAlert.setMessage("Enter VPN server");
+        else
+        	dlgAlert.setMessage("VPN name is already taken");
         
         dlgAlert.setPositiveButton("Back", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
@@ -63,10 +65,25 @@ public class AddPPTPVPNActivity extends Activity
 		dlgAlert.create().show();
 	}
 	
+	// Returns true, if the current profile is complete and error free
+	// and therefore if the data may be written to the DBMS.
+	
+	private boolean maySaveProfile()
+	{
+    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
+    	Cursor result           = adapter.getPPTPCursor();
+
+    	for (result.moveToFirst(); !result.isAfterLast(); result.moveToNext())
+    		if (result.getString(0).equals(pptpProfile.getName()))
+    			return false;
+    	
+		return (pptpProfile.getName() != null && pptpProfile.getServer() != null);
+	}
+	
 	@Override
 	public void onBackPressed() 
 	{
-		if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
+		if (maySaveProfile()) {
 			deleteOldVPNData();
 			writeVPNData();
 			
@@ -156,7 +173,7 @@ public class AddPPTPVPNActivity extends Activity
 
 		switch (item.getItemId()) {
     	case saveVPNBtnId:
-    		if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
+    		if (maySaveProfile()) {
 	    		deleteOldVPNData();
 	    		writeVPNData();
 	    		startActivity(intent);
