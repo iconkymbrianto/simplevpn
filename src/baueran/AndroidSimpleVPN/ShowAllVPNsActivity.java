@@ -438,7 +438,15 @@ public class ShowAllVPNsActivity extends Activity
 				}
 				
 				Method mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
-		        mm.invoke(theService, new Object[]{ vpnInstance, selectedVPNProfile.getEncUsername(), selectedVPNProfile.getEncPassword() });
+				
+				try {
+			        mm.invoke(theService, new Object[]{ vpnInstance, 
+			        		  Encryption.decrypt(selectedVPNProfile.getEncUsername(), prefs.getMasterPassword()), 
+			        	      Encryption.decrypt(selectedVPNProfile.getEncPassword(), prefs.getMasterPassword()) });
+				} catch (Exception e) {
+					// TODO: Isse alert to user
+					e.printStackTrace();
+				}
 			} 
 			catch (NameNotFoundException e) {
 				e.printStackTrace();
