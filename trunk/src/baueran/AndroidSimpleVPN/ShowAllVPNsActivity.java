@@ -11,6 +11,7 @@ import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
@@ -31,6 +32,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Toast;
+import android.text.InputType;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -53,49 +55,7 @@ public class ShowAllVPNsActivity extends Activity
 	
 	private static DBMCustomAdapter     dbmAdapter = null;
 	private static ArrayAdapter<String> toolButtonsAdapter = null;
-	
-	private void displayPasswordInputDlg(String pw, int att)
-	{
-		final int attempts = att;
-		final String encPassword = pw;
 		
-		AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
-		builder.setTitle(attempts + " attempts left");
-		builder.setMessage("Enter master password");
-
-		final EditText input = new EditText(ShowAllVPNsActivity.this);
-		builder.setView(input);
-		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				try {
-					if (Encryption.md5(input.getText().toString()).equals(encPassword)) {
-						prefs.setMasterPassword(input.getText().toString());
-						dialog.cancel();
-					}
-					else if (attempts > 1) {
-						dialog.cancel();
-						displayPasswordInputDlg(encPassword, attempts - 1);
-					}
-					else
-						finish();
-				} catch (NoSuchAlgorithmException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					finish();
-				}
-			}
-		});
-		builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				dialog.cancel();
-				finish();
-			}
-		});
-
-		AlertDialog alert = builder.create();
-		alert.show();
-	}
-	
     @Override
     public void onCreate(Bundle savedInstanceState) 
     {
@@ -177,48 +137,69 @@ public class ShowAllVPNsActivity extends Activity
     				builder.setTitle("Set master password");
 
     				final EditText input = new EditText(ShowAllVPNsActivity.this);
+    				input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
     				builder.setView(input);
     				builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
     					@SuppressWarnings("unchecked")
 						public void onClick(DialogInterface dialog, int whichButton) {
     						if (!input.getText().toString().isEmpty()) {
+								final String newPass = input.getText().toString().trim();
+								final ContentValues values = new ContentValues();
+
 								try {
-									final String newPass = input.getText().toString().trim();
-									ContentValues values = new ContentValues();
 									values.put("_id", "master_password");
 									values.put("value", Encryption.md5(newPass));
-
-									// Store new password
-									if (prefs.getMasterPasswordRowId() < 0) {
-										// TODO: Having to store the rowid is really fugly...
-										prefs.setMasterPasswordRowId((int)dbA.insert("prefs", values));
-										
-										if (prefs.getMasterPasswordRowId() >= 0) {
-											final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
-											tAdapter.remove("Set master password");
-											tAdapter.insert("Change master password", 1);
-											tAdapter.notifyDataSetChanged();
-										}
-										
-										prefs.setMasterPassword(newPass);
-									} 
-									// Update old password
-									else {
-										System.out.println("Updating: " + prefs.getMasterPasswordRowId() + newPass);
-										
-										if (encryptAllProfiles(newPass) && 
-												dbA.update(prefs.getMasterPasswordRowId(), "prefs", values) > 0) {
-											prefs.setMasterPassword(newPass);
-											Toast.makeText(getApplicationContext(), "New password set", Toast.LENGTH_LONG).show();
-										}
-										else
-											SimpleAlertBox.display("Could not change password", 
-																	"Re-encrypting VPN data failed.", 
-																	ShowAllVPNsActivity.this);
-									}
 								} catch (NoSuchAlgorithmException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
+								}
+
+								// Store new password
+								if (prefs.getMasterPasswordRowId() < 0) {
+									// TODO: Having to store the rowid is really fugly...
+									prefs.setMasterPasswordRowId((int)dbA.insert("prefs", values));
+									
+									if (prefs.getMasterPasswordRowId() >= 0) {
+										final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
+										tAdapter.remove("Set master password");
+										tAdapter.insert("Change master password", 1);
+										tAdapter.notifyDataSetChanged();
+									}
+									
+									prefs.setMasterPassword(newPass);
+								} 
+								// Update old password
+								else {
+//									String oldPass = prefs.getMasterPassword();
+									
+									final ProgressDialog myProgressDialog = ProgressDialog.show(ShowAllVPNsActivity.this, 
+																			"Please wait...", 
+																			"Using new password to encrypt VPN profiles...", true);
+									
+									new Thread() {
+										public void run() {
+        									boolean success = false;
+
+        									try {
+	    										success = encryptAllProfiles(newPass) && 
+	    													dbA.update(prefs.getMasterPasswordRowId(), "prefs", values) > 0;
+	                                        } catch (Exception e) { 
+	                                        	success = false;
+	                                        	e.printStackTrace();
+	                                        }
+	                                        if (success)
+	                                        	prefs.setMasterPassword(newPass);
+	                                        else
+	                                        	System.out.println("Re-encryption failed!!!!!!!!!!!!!!!!!!!!");
+	                                        
+	                                        myProgressDialog.dismiss();
+										}
+									}.start();
+
+//									if (oldPass.equals(prefs.getMasterPassword()))
+//                                    	SimpleAlertBox.display("Could not change password", 
+//																"Re-encrypting VPN data failed.", 
+//																ShowAllVPNsActivity.this);
 								}
     						}
     					}
@@ -254,11 +235,12 @@ public class ShowAllVPNsActivity extends Activity
 				profile = getPPTPProfile(cursor.getString(0));
 
 				try {
+					System.out.println("New pass: " + password + ", " + cursor.getString(0));
 					final String decrUser = Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword());
-					System.out.println(decrUser);
+					System.out.println("User: " + decrUser);
 					profile.setEncUsername(Encryption.encrypt(decrUser, password));
 					final String decrPass = Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword());
-					System.out.println(decrPass);
+					System.out.println("Pass: " + decrPass);
 					profile.setEncPassword(Encryption.encrypt(decrPass, password));
 					profile.write(this);
 				} catch (Exception e) {
@@ -379,6 +361,49 @@ public class ShowAllVPNsActivity extends Activity
 		return profile;
     }
     
+	private void displayPasswordInputDlg(String pw, int att)
+	{
+		final int attempts = att;
+		final String encPassword = pw;
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
+		builder.setTitle(attempts + " attempts left");
+		builder.setMessage("Enter master password");
+
+		final EditText input = new EditText(ShowAllVPNsActivity.this);
+		input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		builder.setView(input);
+		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				try {
+					if (Encryption.md5(input.getText().toString()).equals(encPassword)) {
+						prefs.setMasterPassword(input.getText().toString());
+						dialog.cancel();
+					}
+					else if (attempts > 1) {
+						dialog.cancel();
+						displayPasswordInputDlg(encPassword, attempts - 1);
+					}
+					else
+						finish();
+				} catch (NoSuchAlgorithmException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					finish();
+				}
+			}
+		});
+		builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				dialog.cancel();
+				finish();
+			}
+		});
+
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+
 	private ServiceConnection mConnection = new ServiceConnection() 
 	{
 		@Override
