@@ -32,6 +32,7 @@ public class AddPPTPVPNActivity extends Activity
 	private final int saveVPNBtnId   = Menu.FIRST;
 	private final int cancelVPNBtnId = Menu.FIRST + 1;
 	private final int group1Id = 2;
+	private final String secret = "<secret>";
 	
 	// VPN data
 	private PPTPNetwork pptpProfile = new PPTPNetwork();
@@ -211,20 +212,18 @@ public class AddPPTPVPNActivity extends Activity
 				pptpProfile.getName() == null? "VPN name not set" : pptpProfile.getName());
         try {
 			adapter.addItem("Username", 
-					pptpProfile.getEncUsername() == null? "Username not set" : 
-								Encryption.decrypt(pptpProfile.getEncUsername(), prefs.getMasterPassword()));
+					pptpProfile.getEncUsername() == null? "Username not set" : secret);
+			// Encryption.decrypt(pptpProfile.getEncUsername(), prefs.getMasterPassword()));
 		} catch (Exception e1) {
 			adapter.addItem("Username", "<decryption failed>");
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
         try {
 			adapter.addItem("Password", 
-					pptpProfile.getEncPassword() == null? "Password not set" : 
-								Encryption.decrypt(pptpProfile.getEncPassword(), prefs.getMasterPassword()));
+					pptpProfile.getEncPassword() == null? "Password not set" : secret); 
+			// Encryption.decrypt(pptpProfile.getEncPassword(), prefs.getMasterPassword()));
 		} catch (Exception e1) {
 			adapter.addItem("Password", "<decryption failed>");
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
         adapter.addItem("Set VPN server", 
@@ -276,7 +275,7 @@ public class AddPPTPVPNActivity extends Activity
     						try {
 								pptpProfile.setEncUsername(Encryption.encrypt(input.getText().toString().trim(),
 														   prefs.getMasterPassword()));
-								((String[])(adapter.getItem(1)))[1] = pptpProfile.getEncUsername();
+								((String[])(adapter.getItem(1)))[1] = secret; // pptpProfile.getEncUsername();
 	    						adapter.notifyDataSetChanged();
 							} catch (Exception e) {
 								SimpleAlertBox.display("Cannot store profile data",
@@ -308,7 +307,7 @@ public class AddPPTPVPNActivity extends Activity
     						try {
 								pptpProfile.setEncPassword(Encryption.encrypt(input.getText().toString().trim(),
 														   prefs.getMasterPassword()));
-	    						((String[])(adapter.getItem(2)))[1] = pptpProfile.getEncPassword();
+	    						((String[])(adapter.getItem(2)))[1] = secret; // pptpProfile.getEncPassword();
 	    						adapter.notifyDataSetChanged();
 							} catch (Exception e) {
 								SimpleAlertBox.display("Cannot store profile data",

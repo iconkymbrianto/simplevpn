@@ -37,8 +37,16 @@ public class PPTPNetwork extends VPNNetwork
 		DatabaseAdapter adapter = new DatabaseAdapter(ctx);
 		ContentValues values =  new ContentValues();
 
-		final boolean isInDB = isInDB(ctx);
 		long errorCode = 0;
+		int rowId = -1;
+		
+		Cursor cursor = adapter.getPPTPCursor();
+		for (;cursor.moveToNext();) {
+			if (cursor.getString(0).equals(getName())) {
+				rowId = cursor.getPosition() + 1;
+				break;
+			}
+		}
 		
 		values.put("name",     getName());
 		values.put("server",   getServer());
@@ -47,14 +55,13 @@ public class PPTPNetwork extends VPNNetwork
 		values.put("username", getEncUsername());
 		values.put("password", getEncPassword());
 
-		if (isInDB) 
-			adapter.deleteVPN(getName());
-		errorCode = adapter.insert("pptp", values);
-
-		// Add VPN account name to list of stored and available VPNs
-		// to be presented by ShowAllVPNsActivity, but only if it
-		// isn't already there.
-		if (!isInDB) {
+		if (rowId > 0) 
+			errorCode = adapter.update(rowId, "pptp", values);
+		else {
+			errorCode = adapter.insert("pptp", values);
+			
+			// Add VPN account name to list of stored and available VPNs
+			// to be presented by ShowAllVPNsActivity
 			values = new ContentValues();
 			values.put("name", getName());
 			values.put("type", "PPTP");
