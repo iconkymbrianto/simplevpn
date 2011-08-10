@@ -237,10 +237,8 @@ public class ShowAllVPNsActivity extends Activity
 				try {
 					System.out.println("New pass: " + password + ", " + cursor.getString(0));
 					final String decrUser = Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword());
-					System.out.println("User: " + decrUser);
 					profile.setEncUsername(Encryption.encrypt(decrUser, password));
 					final String decrPass = Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword());
-					System.out.println("Pass: " + decrPass);
 					profile.setEncPassword(Encryption.encrypt(decrPass, password));
 					profile.write(this);
 				} catch (Exception e) {
