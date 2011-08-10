@@ -60,7 +60,7 @@ public class ShowAllVPNsActivity extends Activity
 		final String encPassword = pw;
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
-		builder.setMessage(attempts + " left");
+		builder.setTitle(attempts + " attempts left");
 		builder.setMessage("Enter master password");
 
 		final EditText input = new EditText(ShowAllVPNsActivity.this);
@@ -72,7 +72,7 @@ public class ShowAllVPNsActivity extends Activity
 						prefs.setMasterPassword(input.getText().toString());
 						dialog.cancel();
 					}
-					else if (attempts > 0) {
+					else if (attempts > 1) {
 						dialog.cancel();
 						displayPasswordInputDlg(encPassword, attempts - 1);
 					}
@@ -183,26 +183,39 @@ public class ShowAllVPNsActivity extends Activity
 						public void onClick(DialogInterface dialog, int whichButton) {
     						if (!input.getText().toString().isEmpty()) {
 								try {
+									final String newPass = input.getText().toString().trim();
 									ContentValues values = new ContentValues();
 									values.put("_id", "master_password");
-									values.put("value", Encryption.md5(input.getText().toString().trim()));
-	
-									// TODO: Having to store the rowid is really fugly...
+									values.put("value", Encryption.md5(newPass));
+
+									// Store new password
 									if (prefs.getMasterPasswordRowId() < 0) {
+										// TODO: Having to store the rowid is really fugly...
 										prefs.setMasterPasswordRowId((int)dbA.insert("prefs", values));
+										
 										if (prefs.getMasterPasswordRowId() >= 0) {
 											final ArrayAdapter<String> tAdapter = (ArrayAdapter<String>)addLV.getAdapter();
 											tAdapter.remove("Set master password");
 											tAdapter.insert("Change master password", 1);
 											tAdapter.notifyDataSetChanged();
 										}
-									}
+										
+										prefs.setMasterPassword(newPass);
+									} 
+									// Update old password
 									else {
-										dbA.update(prefs.getMasterPasswordRowId(), "prefs", values);
-										// TODO: Recode all usernames and passwords in the DBMS with new password
-										// ...
+										System.out.println("Updating: " + prefs.getMasterPasswordRowId() + newPass);
+										
+										if (encryptAllProfiles(newPass) && 
+												dbA.update(prefs.getMasterPasswordRowId(), "prefs", values) > 0) {
+											prefs.setMasterPassword(newPass);
+											Toast.makeText(getApplicationContext(), "New password set", Toast.LENGTH_LONG).show();
+										}
+										else
+											SimpleAlertBox.display("Could not change password", 
+																	"Re-encrypting VPN data failed.", 
+																	ShowAllVPNsActivity.this);
 									}
-									prefs.setMasterPassword(input.getText().toString().trim());
 								} catch (NoSuchAlgorithmException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -224,6 +237,39 @@ public class ShowAllVPNsActivity extends Activity
             } 
         }); 
 	}
+
+    /*
+     * This method will usually be called when the user changed the
+     * master password and an encryption of all usernames and
+     * passwords with this new master password becomes necessary.
+     */
+    
+    public boolean encryptAllProfiles(String password)
+    {
+		VPNNetwork profile = null;
+		
+		if (dbA != null) {
+	    	cursor = dbA.getVPNCursor();
+	    	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+				profile = getPPTPProfile(cursor.getString(0));
+
+				try {
+					final String decrUser = Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword());
+					System.out.println(decrUser);
+					profile.setEncUsername(Encryption.encrypt(decrUser, password));
+					final String decrPass = Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword());
+					System.out.println(decrPass);
+					profile.setEncPassword(Encryption.encrypt(decrPass, password));
+					profile.write(this);
+				} catch (Exception e) {
+					e.printStackTrace();
+					return false;
+				}
+	    	}
+		}
+		
+		return true;
+    }
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo)
@@ -288,13 +334,14 @@ public class ShowAllVPNsActivity extends Activity
     	
     	return false;
     }
-
+    
     public VPNNetwork getProfile(String vpnName)
     {
+    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
 		VPNNetwork profile = null;
 		
-		if (dbA != null) {
-	    	cursor = dbA.getVPNCursor();
+		if (adapter != null) {
+	    	cursor = adapter.getVPNCursor();
 	    	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
 	    		if (cursor.getString(0).equals(vpnName)) {
 	    			if (cursor.getString(1).equals("PPTP")) {

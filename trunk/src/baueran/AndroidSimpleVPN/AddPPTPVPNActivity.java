@@ -97,7 +97,7 @@ public class AddPPTPVPNActivity extends Activity
     
     public void writeVPNData()
     {
-    	if (pptpProfile.getName() != null && pptpProfile.getServer() != null) {
+    	if (maySaveProfile()) {
 	    	DatabaseAdapter adapter = new DatabaseAdapter(getApplicationContext());
 			ContentValues values = null;
 			

@@ -1,6 +1,8 @@
 package baueran.AndroidSimpleVPN;
 
-public class VPNNetwork 
+import android.content.Context;
+
+public abstract class VPNNetwork 
 {
 	private String name = null;
 	private String type = null;
@@ -9,17 +11,8 @@ public class VPNNetwork
 	private String encUsername = null;
 	private String encPassword = null;
 
-//	private Boolean _isConnected = false;
-//	
-//	public Boolean isConnected()
-//	{
-//		return _isConnected;
-//	}
-//	
-//	public void setConnected(Boolean state)
-//	{
-//		_isConnected = state;
-//	}
+	abstract public boolean isInDB(Context ctx);
+	abstract public long write(Context ctx);
 	
 	public void setName(String name) 
 	{
