@@ -59,7 +59,7 @@ public class DatabaseAdapter
 	public long update(int rowId, String table, ContentValues values)
 	{
 		try {
-			return db.update(table, values, "_id=" + rowId, null);
+			return db.update(table, values, "rowid=" + rowId, null);
 		}
 		catch (Exception e) {
 			System.out.println("Exception thrown when inserting data: " + e.getMessage());
