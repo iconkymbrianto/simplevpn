@@ -89,6 +89,9 @@ public class VPNWrapper
     				Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
 		    		mm.invoke(vpnInstance, profile.getServer());
 
+    				mm = vpnInstance.getClass().getMethod("setName", String.class);
+		    		mm.invoke(vpnInstance, profile.getName());
+
 		    		mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
 		    		mm.invoke(theService, new Object[]{ vpnInstance, 
 		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword()), 
