@@ -8,10 +8,12 @@ import baueran.AndroidSimpleVPN.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.AdapterView;
@@ -22,6 +24,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
 import android.text.InputType;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -30,7 +33,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 
-public class ShowAllVPNsActivity extends Activity 
+public class ShowAllVPNsActivity extends Activity
 { 
     private ListView vpnLV, addLV;
     private DatabaseAdapter dbA;
@@ -214,6 +217,26 @@ public class ShowAllVPNsActivity extends Activity
         		}
             } 
         }); 
+        
+        registerReceiver(new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+            	Toast.makeText(getApplicationContext(),
+                        	   (String)"Received intent", 
+                        	   Toast.LENGTH_LONG).show();
+            	
+                Bundle bundle = intent.getExtras();
+                String profName = new String();
+                if (bundle != null && bundle.containsKey("profile_name")) {
+                	try {
+        				profName = bundle.getString("profile_name");
+        			} catch (Exception e) {
+        				e.printStackTrace();
+        			}
+                }
+            	
+            	System.out.println(profName + ": !!!!!!!!!!!!!!!!");
+            }
+        }, new IntentFilter("vpn.connectivity")); 
 	}
 
     /*
