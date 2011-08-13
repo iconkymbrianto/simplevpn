@@ -1,6 +1,5 @@
 package baueran.AndroidSimpleVPN;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -19,7 +18,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -31,7 +29,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.Toast;
 import android.text.InputType;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -45,7 +42,6 @@ public class ShowAllVPNsActivity extends Activity
     private ListView vpnLV, addLV;
     private DatabaseAdapter dbA;
     private Cursor cursor = null;
-    private VPNNetwork selectedVPNProfile = null;
 	private final Preferences prefs = Preferences.getInstance();
     
 	private final int CONTEXT_CONNECT = 0;
@@ -401,109 +397,99 @@ public class ShowAllVPNsActivity extends Activity
 		AlertDialog alert = builder.create();
 		alert.show();
 	}
-
-	private ServiceConnection mConnection = new ServiceConnection() 
-	{
-		@Override
-		public void onServiceConnected(ComponentName name, IBinder service) 
-		{
-			ApplicationInfo vpnAppInfo;
-	    	Context ctx = getApplicationContext();
-	    	PathClassLoader stubClassLoader;
-
-			try {
-				vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
-		        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
-				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
-				Method m = stubClass.getMethod("asInterface", IBinder.class);
-				Object theService = m.invoke(null, service);
-				
-				Class<?> vpnProfile = null;
-				try {
-					vpnProfile = Class.forName("android.net.vpn.PptpProfile");
-				} catch (ClassNotFoundException e2) {
-					e2.printStackTrace();
-				}
-								
-				Object vpnInstance = null;
-		    	
-		    	try {
-		    		vpnInstance = vpnProfile.newInstance();
-		    		Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
-		    		mm.invoke(vpnInstance, selectedVPNProfile.getServer());
-				} catch (InstantiationException e1) {
-					e1.printStackTrace();
-				} catch (IllegalAccessException e1) {
-					e1.printStackTrace();
-				}
-				
-				Method mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
-				
-				try {
-			        mm.invoke(theService, new Object[]{ vpnInstance, 
-			        		  Encryption.decrypt(selectedVPNProfile.getEncUsername(), prefs.getMasterPassword()), 
-			        	      Encryption.decrypt(selectedVPNProfile.getEncPassword(), prefs.getMasterPassword()) });
-				} catch (Exception e) {
-					// TODO: Isse alert to user
-					e.printStackTrace();
-				}
-			} 
-			catch (NameNotFoundException e) {
-				e.printStackTrace();
-			}
-			catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-			catch (SecurityException e) {
-				e.printStackTrace();
-			}
-			catch (NoSuchMethodException e) {
-				e.printStackTrace();
-			}
-			catch (IllegalArgumentException e) {
-				e.printStackTrace();
-			}
-			catch (IllegalAccessException e) {
-				e.printStackTrace();
-			}
-			catch (InvocationTargetException e) {
-				e.printStackTrace();
-			}
-
-			Toast.makeText(getApplicationContext(), "VPN should be ready now", Toast.LENGTH_LONG).show();
-		}
-
-		// According to documentation, the following callback is not invoked
-		// upon unbind, but upon a crash!
-		
-		@Override
-		public void onServiceDisconnected(ComponentName name) 
-		{
-			Toast.makeText(getApplicationContext(), "VPN disconnected", Toast.LENGTH_LONG).show();
-		}
-	};
-
-	public void disconnectVPN()
-	{
-		unbindService(mConnection);
-	}
 	
-	public boolean connectVPN(VPNNetwork profile)
+	public boolean disconnectVPN()
     {
     	boolean connected = false;
+
+    	ServiceConnection mConnection = new ServiceConnection() {
+    		@Override
+    		public void onServiceConnected(ComponentName name, IBinder service) 
+    		{
+    			ApplicationInfo vpnAppInfo;
+    	    	Context ctx = getApplicationContext();
+    	    	PathClassLoader stubClassLoader;
+
+    			try {
+    				vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
+    		        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
+    				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
+    				Method m = stubClass.getMethod("asInterface", IBinder.class);
+    				Object theService = m.invoke(null, service);
+    					    		
+		    		Method mm = stubClass.getMethod("disconnect");
+		    		mm.invoke(theService);
+    			} 
+    			catch (Exception e) {
+    				e.printStackTrace();
+    			}
+    		}
+
+    		// According to documentation, the following callback is not invoked
+    		// upon unbind, but upon a crash!
+    		
+    		@Override
+    		public void onServiceDisconnected(ComponentName name) {}
+    	};
     	
     	try {
-    		selectedVPNProfile = profile;
     		connected = bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE);
     	} 
-    	catch (SecurityException e) {
+    	catch (Exception e) {
 			e.printStackTrace();
 		} 
-		catch (IllegalArgumentException e) {
+
+    	return connected;
+    }
+	
+	public boolean connectVPN(final VPNNetwork profile)
+    {
+    	boolean connected = false;
+
+    	ServiceConnection mConnection = new ServiceConnection() {
+    		@Override
+    		public void onServiceConnected(ComponentName name, IBinder service) 
+    		{
+    			ApplicationInfo vpnAppInfo;
+    	    	Context ctx = getApplicationContext();
+    	    	PathClassLoader stubClassLoader;
+
+    			try {
+    				vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
+    		        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
+    				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
+    				Method m = stubClass.getMethod("asInterface", IBinder.class);
+    				Object theService = m.invoke(null, service);
+    				
+    				Class<?> vpnProfile = Class.forName("android.net.vpn.PptpProfile");
+    				Object vpnInstance = vpnProfile.newInstance();
+		    		
+    				Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
+		    		mm.invoke(vpnInstance, profile.getServer());
+
+		    		mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
+		    		mm.invoke(theService, new Object[]{ vpnInstance, 
+		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword()), 
+		    				  Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword()) });
+    			} 
+    			catch (Exception e) {
+    				e.printStackTrace();
+    			}
+    		}
+
+    		// According to documentation, the following callback is not invoked
+    		// upon unbind, but upon a crash!
+    		
+    		@Override
+    		public void onServiceDisconnected(ComponentName name) {} 
+    	};
+    	
+    	try {
+    		connected = bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE);
+    	} 
+    	catch (Exception e) {
 			e.printStackTrace();
 		} 
-		
-		Toast.makeText(getApplicationContext(), connected? "Service bound" : "Service not bound", Toast.LENGTH_LONG).show();
 
     	return connected;
     }
