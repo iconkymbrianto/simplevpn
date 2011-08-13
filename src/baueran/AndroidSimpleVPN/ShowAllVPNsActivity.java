@@ -1,26 +1,19 @@
 package baueran.AndroidSimpleVPN;
 
-import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-
-import dalvik.system.PathClassLoader;
 
 import baueran.AndroidSimpleVPN.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.ApplicationInfo;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
@@ -79,24 +72,25 @@ public class ShowAllVPNsActivity extends Activity
 				String selectedNetwork = ((String[])dbmAdapter.getItem(position))[0];
 				VPNNetwork profile = getProfile(selectedNetwork);
 
-				if (prefs.currentlyConnectedNetwork().isEmpty() && connectVPN(profile)) {
-					prefs.setCurrentlyConnectedNetwork(selectedNetwork);
-					dbmAdapter.notifyDataSetChanged();
+				if (prefs.currentlyConnectedNetwork().isEmpty()) {
+					connectDlg(profile, 3);
 				}
 			}
         });
         registerForContextMenu(vpnLV);
         
     	// Get stored, encrypted master password from DB
-    	cursor = dbA.getPrefsCursor();
-    	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
-    		if (cursor.getString(0).equals("master_password")) {
-    			final String encPassword = cursor.getString(1);
-    			prefs.setMasterPasswordRowId(cursor.getInt(2));
-    			displayPasswordInputDlg(encPassword, 3);
-    		}
-    	}
-
+        if (prefs.getMasterPasswordRowId() < 0 || prefs.getMasterPassword().isEmpty()) {
+	    	cursor = dbA.getPrefsCursor();
+	    	for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+	    		if (cursor.getString(0).equals("master_password")) {
+	    			final String encPassword = cursor.getString(1);
+	    			prefs.setMasterPasswordRowId(cursor.getInt(2));
+	    			unlock(encPassword, 3);
+	    		}
+	    	}
+        }
+        
     	ArrayList<String> buttonEntries = new ArrayList<String>();
     	buttonEntries.add("Add VPN");
     	buttonEntries.add(prefs.getMasterPasswordRowId() < 0? "Set master password" : "Change master password"); 
@@ -172,7 +166,7 @@ public class ShowAllVPNsActivity extends Activity
 																			"Please wait...", 
 																			"Using new password to encrypt VPN profiles...", true);
 									
-									new Thread() {
+									Thread recrypt = new Thread() {
 										public void run() {
         									boolean success = false;
 
@@ -190,12 +184,19 @@ public class ShowAllVPNsActivity extends Activity
 	                                        
 	                                        myProgressDialog.dismiss();
 										}
-									}.start();
+									};
+									recrypt.start();
 
-//									if (oldPass.equals(prefs.getMasterPassword()))
-//                                    	SimpleAlertBox.display("Could not change password", 
-//																"Re-encrypting VPN data failed.", 
-//																ShowAllVPNsActivity.this);
+//									try {
+//										recrypt.join();
+//										if (oldPass.equals(prefs.getMasterPassword()))
+//											SimpleAlertBox.display("Could not change password", 
+//																   "Re-encrypting VPN data failed.", 
+//																   ShowAllVPNsActivity.this);
+//									} catch (InterruptedException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
 								}
     						}
     					}
@@ -269,20 +270,16 @@ public class ShowAllVPNsActivity extends Activity
 		final ContextMenuInfo menuInfo = item.getMenuInfo();
     	final AdapterView.AdapterContextMenuInfo info =	(AdapterView.AdapterContextMenuInfo)menuInfo;
     	final String selectedVPN = ((String[])(vpnLV.getAdapter().getItem(info.position)))[0];
+		VPNWrapper vpn = new VPNWrapper(getApplicationContext());
 
 		switch (item.getItemId()) {
 		case CONTEXT_CONNECT: {
-			final VPNNetwork profile = getProfile(selectedVPN); 
-
-			if (connectVPN(profile)) {
-				prefs.setCurrentlyConnectedNetwork(profile.getName());
-				dbmAdapter.notifyDataSetChanged();
-			}
-			
+			final VPNNetwork profile = getProfile(selectedVPN);
+			connectDlg(profile, 3);
 			return true;
 			}
 		case CONTEXT_DISCONNECT: {
-			disconnectVPN();
+			vpn.disconnect();
 			prefs.unsetCurrentlyConnectedNetwork();
 			dbmAdapter.notifyDataSetChanged();
 			return true;
@@ -355,7 +352,53 @@ public class ShowAllVPNsActivity extends Activity
 		return profile;
     }
     
-	private void displayPasswordInputDlg(String pw, int att)
+	private void connectDlg(final VPNNetwork profile, final int attempts)
+	{
+		final VPNWrapper vpn = new VPNWrapper(getApplicationContext());
+		final String encPass = dbA.getEncryptedMasterPasssword();
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(ShowAllVPNsActivity.this);
+		builder.setTitle(attempts + " attempts left");
+		builder.setMessage("Enter master password");
+
+		final EditText input = new EditText(ShowAllVPNsActivity.this);
+		input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		builder.setView(input);
+		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				try {
+					if (Encryption.md5(input.getText().toString()).equals(encPass)) {
+						prefs.setMasterPassword(input.getText().toString());
+						dialog.cancel();
+						
+						if (vpn.connect(profile)) {
+							prefs.setCurrentlyConnectedNetwork(profile.getName());
+							dbmAdapter.notifyDataSetChanged();
+						}
+					}
+					else if (attempts > 1) {
+						dialog.cancel();
+						connectDlg(profile, attempts - 1);
+					}
+					else
+						prefs.setMasterPassword("");
+				} catch (NoSuchAlgorithmException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				dialog.cancel();
+			}
+		});
+
+		AlertDialog alert = builder.create();
+		alert.show();
+	}      
+
+	private void unlock(String pw, int att)
 	{
 		final int attempts = att;
 		final String encPassword = pw;
@@ -376,10 +419,12 @@ public class ShowAllVPNsActivity extends Activity
 					}
 					else if (attempts > 1) {
 						dialog.cancel();
-						displayPasswordInputDlg(encPassword, attempts - 1);
+						unlock(encPassword, attempts - 1);
 					}
-					else
+					else {
+						prefs.setMasterPassword("");
 						finish();
+					}
 				} catch (NoSuchAlgorithmException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -396,104 +441,8 @@ public class ShowAllVPNsActivity extends Activity
 
 		AlertDialog alert = builder.create();
 		alert.show();
-	}
-	
-	public boolean disconnectVPN()
-    {
-    	boolean connected = false;
-
-    	ServiceConnection mConnection = new ServiceConnection() {
-    		@Override
-    		public void onServiceConnected(ComponentName name, IBinder service) 
-    		{
-    			ApplicationInfo vpnAppInfo;
-    	    	Context ctx = getApplicationContext();
-    	    	PathClassLoader stubClassLoader;
-
-    			try {
-    				vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
-    		        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
-    				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
-    				Method m = stubClass.getMethod("asInterface", IBinder.class);
-    				Object theService = m.invoke(null, service);
-    					    		
-		    		Method mm = stubClass.getMethod("disconnect");
-		    		mm.invoke(theService);
-    			} 
-    			catch (Exception e) {
-    				e.printStackTrace();
-    			}
-    		}
-
-    		// According to documentation, the following callback is not invoked
-    		// upon unbind, but upon a crash!
-    		
-    		@Override
-    		public void onServiceDisconnected(ComponentName name) {}
-    	};
-    	
-    	try {
-    		connected = bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE);
-    	} 
-    	catch (Exception e) {
-			e.printStackTrace();
-		} 
-
-    	return connected;
-    }
-	
-	public boolean connectVPN(final VPNNetwork profile)
-    {
-    	boolean connected = false;
-
-    	ServiceConnection mConnection = new ServiceConnection() {
-    		@Override
-    		public void onServiceConnected(ComponentName name, IBinder service) 
-    		{
-    			ApplicationInfo vpnAppInfo;
-    	    	Context ctx = getApplicationContext();
-    	    	PathClassLoader stubClassLoader;
-
-    			try {
-    				vpnAppInfo = ctx.getPackageManager().getApplicationInfo("com.android.settings", 0);
-    		        stubClassLoader = new PathClassLoader(vpnAppInfo.sourceDir, ClassLoader.getSystemClassLoader());
-    				Class<?> stubClass = Class.forName("android.net.vpn.IVpnService$Stub", true, stubClassLoader);
-    				Method m = stubClass.getMethod("asInterface", IBinder.class);
-    				Object theService = m.invoke(null, service);
-    				
-    				Class<?> vpnProfile = Class.forName("android.net.vpn.PptpProfile");
-    				Object vpnInstance = vpnProfile.newInstance();
-		    		
-    				Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
-		    		mm.invoke(vpnInstance, profile.getServer());
-
-		    		mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
-		    		mm.invoke(theService, new Object[]{ vpnInstance, 
-		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword()), 
-		    				  Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword()) });
-    			} 
-    			catch (Exception e) {
-    				e.printStackTrace();
-    			}
-    		}
-
-    		// According to documentation, the following callback is not invoked
-    		// upon unbind, but upon a crash!
-    		
-    		@Override
-    		public void onServiceDisconnected(ComponentName name) {} 
-    	};
-    	
-    	try {
-    		connected = bindService(new Intent("android.net.vpn.IVpnService"), mConnection, Context.BIND_AUTO_CREATE);
-    	} 
-    	catch (Exception e) {
-			e.printStackTrace();
-		} 
-
-    	return connected;
-    }
-        
+	}      
+	        
     // The custom adapter is necessary because a SimpleCursorAdapter
     // is more or less a 1:1 mapping from DB to view, and I need to
     // change/update the connection status of the respective connection
