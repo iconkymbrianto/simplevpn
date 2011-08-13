@@ -89,6 +89,9 @@ public class VPNWrapper
     				Method mm = vpnInstance.getClass().getMethod("setServerName", String.class);
 		    		mm.invoke(vpnInstance, profile.getServer());
 
+		    		// Additional stuff can/should be set according to
+		    		// http://www.androidjavadoc.com/2.3/android/net/vpn/VpnProfile.html
+		    		
     				mm = vpnInstance.getClass().getMethod("setName", String.class);
 		    		mm.invoke(vpnInstance, profile.getName());
 
