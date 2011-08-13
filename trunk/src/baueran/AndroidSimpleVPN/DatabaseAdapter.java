@@ -45,6 +45,15 @@ public class DatabaseAdapter
 		return db.rawQuery("SELECT _id, value, rowid FROM prefs", null);
 	}
 
+	public String getEncryptedMasterPasssword()
+	{
+		Cursor prefs = getPrefsCursor();
+		for (prefs.moveToFirst();!prefs.isAfterLast(); prefs.moveToNext())
+    		if (prefs.getString(0).equals("master_password"))
+    			return prefs.getString(1);
+		return null;
+	}
+	
 	public long insert(String table, ContentValues values)
 	{
 		try {
