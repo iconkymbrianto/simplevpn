@@ -226,9 +226,19 @@ public class ShowAllVPNsActivity extends Activity
             	
                 Bundle bundle = intent.getExtras();
                 String profName = new String();
-                if (bundle != null && bundle.containsKey("profile_name")) {
+                // For details on the bundle, see e.g.,
+                // http://hi-android.info/src/android/net/vpn/VpnManager.java.html
+                if (bundle != null) {
                 	try {
-        				profName = bundle.getString("profile_name");
+        				profName =  bundle.getString("profile_name");
+        				int state = bundle.getInt("connection_state", -1);
+        				
+        				// For enum values, see enum in http://hi-android.info/src/android/net/vpn/VpnState.java.html
+        				System.out.println("State: " + state);
+        				if (state != 0 && state != 3) {
+        					prefs.unsetCurrentlyConnectedNetwork();
+        					dbmAdapter.notifyDataSetChanged();
+        				}
         			} catch (Exception e) {
         				e.printStackTrace();
         			}
