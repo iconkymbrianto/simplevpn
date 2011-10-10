@@ -97,8 +97,8 @@ public class VPNWrapper
 
 		    		mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
 		    		mm.invoke(theService, new Object[]{ vpnInstance, 
-		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getMasterPassword()), 
-		    				  Encryption.decrypt(profile.getEncPassword(), prefs.getMasterPassword()) });
+		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getEncMasterPassword()), 
+		    				  Encryption.decrypt(profile.getEncPassword(), prefs.getEncMasterPassword()) });
     			} 
     			catch (Exception e) {
     				e.printStackTrace();

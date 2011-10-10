@@ -25,7 +25,9 @@ public class AddVPNActivity extends Activity {
     {
         super.onCreate(savedInstanceState);
     	setContentView(R.layout.listlayout);
-         
+
+    	final Bundle bundle = getIntent().getExtras();
+    	
     	ArrayList<Map<String, String>> data = new ArrayList<Map<String, String>>();
 
     	Map<String, String> m = new HashMap<String,String>();
@@ -47,6 +49,7 @@ public class AddVPNActivity extends Activity {
     		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         		Intent intent = new Intent(Intent.ACTION_VIEW);
         		intent.setClassName(AddVPNActivity.this, AddPPTPVPNActivity.class.getName());
+        		intent.putExtras(bundle);
         		startActivity(intent);
         		finish();
     		}
