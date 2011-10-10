@@ -220,7 +220,6 @@ public class AddPPTPVPNActivity extends Activity
         try {
 			adapter.addItem("Username", 
 					pptpProfile.getEncUsername() == null? "Username not set" : secret);
-						// Encryption.decrypt(pptpProfile.getEncUsername(), prefs.getMasterPassword()));
 		} catch (Exception e1) {
 			adapter.addItem("Username", "<decryption failed>");
 			e1.printStackTrace();
@@ -228,7 +227,6 @@ public class AddPPTPVPNActivity extends Activity
         try {
 			adapter.addItem("Password", 
 					pptpProfile.getEncPassword() == null? "Password not set" : secret); 
-						// Encryption.decrypt(pptpProfile.getEncPassword(), prefs.getMasterPassword()));
 		} catch (Exception e1) {
 			adapter.addItem("Password", "<decryption failed>");
 			e1.printStackTrace();

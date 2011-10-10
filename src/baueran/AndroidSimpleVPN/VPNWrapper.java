@@ -13,7 +13,6 @@ import android.os.IBinder;
 public class VPNWrapper
 {
 	private Context context = null;
-	private Preferences prefs = Preferences.getInstance();
 	
 	public VPNWrapper(Context ctx)
 	{
@@ -64,10 +63,11 @@ public class VPNWrapper
     	return connected;
     }
 	
-	public boolean connect(final VPNNetwork profile)
+	public boolean connect(final VPNNetwork profile, String clearPassword)
     {
     	boolean connected = false;
-
+    	final String password = clearPassword;
+    	
     	ServiceConnection mConnection = new ServiceConnection() {
     		@Override
     		public void onServiceConnected(ComponentName name, IBinder service) 
@@ -97,8 +97,8 @@ public class VPNWrapper
 
 		    		mm = stubClass.getMethod("connect", new Class[] { Class.forName("android.net.vpn.VpnProfile"), String.class, String.class });
 		    		mm.invoke(theService, new Object[]{ vpnInstance, 
-		    				  Encryption.decrypt(profile.getEncUsername(), prefs.getEncMasterPassword()), 
-		    				  Encryption.decrypt(profile.getEncPassword(), prefs.getEncMasterPassword()) });
+		    				  Encryption.decrypt(profile.getEncUsername(), password), 
+		    				  Encryption.decrypt(profile.getEncPassword(), password) });
     			} 
     			catch (Exception e) {
     				e.printStackTrace();
