@@ -34,11 +34,15 @@ public class AddPPTPVPNActivity extends Activity
 	private final int group1Id = 2;
 	private final String secret = "<secret>";
 	
+	// This activity will only ever be called after the
+	// user has entered the master password, so that
+	// we can encrypt data accordingly.  It will be
+	// passed in the Intent and read by onCreate.
+	private String unencryptedMasterPass = null;
+	
 	// VPN data
 	private PPTPNetwork pptpProfile = new PPTPNetwork();
 	private String oldVPNName = null;
-	
-	private final Preferences prefs = Preferences.getInstance();
 	
 	public void displayNotEnoughDataError()
 	{
@@ -195,16 +199,19 @@ public class AddPPTPVPNActivity extends Activity
 
         MyCustomAdapter adapter = new MyCustomAdapter();
 
-        Bundle bundle = this.getIntent().getExtras();
+        Bundle bundle = getIntent().getExtras();
         // Check if we have been called with a parameter to edit
         // an existing VPN network entry, or want to create a new one.
         // Parameter is called "name" and set inside ShowAllVPNsActivity.
         if (bundle != null) {
-        	try {
+			unencryptedMasterPass = bundle.getString("password");
+
+			try {
 				pptpProfile = readVPNData(bundle.getString("name"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			
         	oldVPNName = pptpProfile.getName();
         }
 
@@ -274,8 +281,8 @@ public class AddPPTPVPNActivity extends Activity
     						
     						try {
 								pptpProfile.setEncUsername(Encryption.encrypt(input.getText().toString().trim(),
-														   prefs.getMasterPassword()));
-								((String[])(adapter.getItem(1)))[1] = secret; // pptpProfile.getEncUsername();
+														   unencryptedMasterPass));
+								((String[])(adapter.getItem(1)))[1] = secret;
 	    						adapter.notifyDataSetChanged();
 							} catch (Exception e) {
 								SimpleAlertBox.display("Cannot store profile data",
@@ -306,8 +313,8 @@ public class AddPPTPVPNActivity extends Activity
 
     						try {
 								pptpProfile.setEncPassword(Encryption.encrypt(input.getText().toString().trim(),
-														   prefs.getMasterPassword()));
-	    						((String[])(adapter.getItem(2)))[1] = secret; // pptpProfile.getEncPassword();
+										                   unencryptedMasterPass));
+	    						((String[])(adapter.getItem(2)))[1] = secret;
 	    						adapter.notifyDataSetChanged();
 							} catch (Exception e) {
 								SimpleAlertBox.display("Cannot store profile data",

@@ -1,9 +1,12 @@
 package baueran.AndroidSimpleVPN;
 
+import java.security.NoSuchAlgorithmException;
+
 public class Preferences
 {
-	private String masterPassword = null;
-	private int masterPasswordRowId = -1;
+	// The md5 encrypted master password
+	private String encPassword = null;
+	private int encPasswordRowId = -1;
 	// Stores the name of the currently connected network, 
 	// empty if no network is connected.
 	private String currentlyConnectedNetwork = null;
@@ -11,7 +14,7 @@ public class Preferences
 	
 	private Preferences() 
 	{
-		masterPassword = new String();
+		encPassword = new String();
 		currentlyConnectedNetwork = new String();
 	}
 	
@@ -22,6 +25,20 @@ public class Preferences
 		return instance;
 	}
 	
+	// Returns true if the md5 of string is equivalent to the md5
+	// of the stored master password.
+	
+	boolean equalsPass(String string)
+	{
+		try {
+			if (Encryption.md5(string).equals(getEncMasterPassword()))
+				return true;
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	public String currentlyConnectedNetwork()
 	{
 		return currentlyConnectedNetwork;
@@ -37,22 +54,22 @@ public class Preferences
 		currentlyConnectedNetwork = c;
 	}
 
-	public void setMasterPasswordRowId(int masterPasswordRowId)
+	public void setEncMasterPasswordRowId(int encMasterPasswordRowId)
 	{
-		this.masterPasswordRowId = masterPasswordRowId;
+		this.encPasswordRowId = encMasterPasswordRowId;
 	}
 	
-	public int getMasterPasswordRowId() 
+	public int getEncMasterPasswordRowId() 
 	{
-		return masterPasswordRowId;
+		return encPasswordRowId;
 	}
 	
-	public void setMasterPassword(String masterPassword)
+	public void setEncMasterPassword(String encMasterPassword)
 	{
-		this.masterPassword = masterPassword;
+		this.encPassword = encMasterPassword;
 	}
 	
-	public String getMasterPassword() {
-		return masterPassword;
+	public String getEncMasterPassword() {
+		return encPassword;
 	}
 }
