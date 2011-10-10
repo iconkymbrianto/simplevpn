@@ -66,6 +66,9 @@ public class Encryption
 		 Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 		 cipher.init(Cipher.DECRYPT_MODE, generateKey(password), new IvParameterSpec(iv));
 		 String plaintext = new String(cipher.doFinal(encrypted), "UTF-8");
+		 
+		 System.out.println("DECRYPTED: " + plaintext);
+		 
 		 return plaintext;
 	 }
 }
