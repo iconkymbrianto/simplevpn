@@ -1,0 +1,1 @@
+This tool is a front-end to the internal Android VPN client and allows users to open a VPN connection with a single click, instead of entering the password every time.
